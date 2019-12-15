@@ -1,6 +1,10 @@
 
 # Rust DataBase Connectivity (RDBC)
 
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Docs](https://docs.rs/rdbc/badge.svg)](https://docs.rs/rdbc)
+[![Version](https://img.shields.io/crates/v/rdbc.svg)](https://crates.io/crates/rdbc)
+
 Love them or hate them, the [ODBC](https://en.wikipedia.org/wiki/Open_Database_Connectivity) and [JDBC](https://en.wikipedia.org/wiki/Java_Database_Connectivity) standards have made it easy to use a wide range of desktop and server products with many different databases thanks to the availability of database drivers implementing these standards.
 
 I believe there is a need for a Rust equivalent so I have started this experimental project and aim to provide an RDBC API and reference implementations (drivers) for both Postgres and MySQL. 

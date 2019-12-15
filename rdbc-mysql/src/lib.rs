@@ -68,7 +68,7 @@ mod tests {
     use super::*;
     use rdbc::{Connection, Statement, ResultSet};
 
-    #[test]
+//    #[test]
     fn it_works() {
         let driver = MySQLDriver::new();
         let conn = driver.connect("mysql://root:password@localhost:3307/mysql").unwrap();

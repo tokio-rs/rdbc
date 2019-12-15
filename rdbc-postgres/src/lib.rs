@@ -8,7 +8,7 @@
 //! use rdbc_postgres::PostgresDriver;
 //! let driver = PostgresDriver::new();
 //! let conn = driver.connect("postgres://postgres@localhost:5433");
-//! let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
+//! let mut stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
 //! let rs = stmt.execute_query().unwrap();
 //! let mut rs = rs.borrow_mut();
 //! while rs.next() {
@@ -50,11 +50,11 @@ impl PConnection {
 
 impl rdbc::Connection for PConnection {
 
-    fn create_statement(&self, sql: &str) -> rdbc::Result<Rc<dyn rdbc::Statement>> {
-        Ok(Rc::new(PStatement {
+    fn create_statement(&self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement>>> {
+        Ok(Rc::new(RefCell::new(PStatement {
             conn: self.conn.clone(),
             sql: sql.to_owned()
-        }))
+        })))
     }
 
 }
@@ -66,12 +66,12 @@ struct PStatement {
 
 impl rdbc::Statement for PStatement {
 
-    fn execute_query(&self) -> rdbc::Result<Rc<RefCell<dyn ResultSet>>> {
+    fn execute_query(&mut self) -> rdbc::Result<Rc<RefCell<dyn ResultSet>>> {
         let rows: Rows = self.conn.query(&self.sql, &[]).unwrap();
         Ok(Rc::new(RefCell::new(PResultSet { i: 0, rows })))
     }
 
-    fn execute_update(&self) -> rdbc::Result<usize> {
+    fn execute_update(&mut self) -> rdbc::Result<usize> {
         unimplemented!()
     }
 }
@@ -107,12 +107,14 @@ mod tests {
 
     use super::*;
     use rdbc::{Connection, Statement, ResultSet};
+    use std::borrow::BorrowMut;
 
     //#[test]
     fn it_works() {
         let driver = PostgresDriver::new();
         let conn = driver.connect("postgres://postgres@localhost:5433");
         let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
+        let mut stmt = stmt.borrow_mut();
         let rs = stmt.execute_query().unwrap();
         let mut rs = rs.borrow_mut();
         while rs.next() {

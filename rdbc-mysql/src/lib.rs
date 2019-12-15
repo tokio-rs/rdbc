@@ -8,7 +8,7 @@
 //! use rdbc_mysql::MySQLDriver;
 //! let driver = MySQLDriver::new();
 //! let conn = driver.connect("mysql://root:password@localhost:3307/mysql").unwrap();
-//! let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
+//! let mut stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
 //! let rs = stmt.execute_query().unwrap();
 //! let mut rs = rs.borrow_mut();
 //! while rs.next() {
@@ -32,30 +32,36 @@ impl MySQLDriver {
 
     pub fn connect(&self, url: &str) -> rdbc::Result<Rc<dyn rdbc::Connection>> {
         let pool = my::Pool::new(url).unwrap();
-        Ok(Rc::new(MySQLConnection { pool }))
+        Ok(Rc::new(MySQLConnection { conn: Rc::new(RefCell::new(pool.get_conn().unwrap())) }))
     }
 
 }
 
 struct MySQLConnection {
-    pool: my::Pool
+    conn: Rc<RefCell<my::PooledConn>>
 }
 
 
 impl rdbc::Connection for MySQLConnection {
-    fn create_statement(&self, sql: &str) -> rdbc::Result<Rc<dyn rdbc::Statement>> {
-        unimplemented!()
+    fn create_statement(&self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement>>> {
+        Ok(Rc::new(RefCell::new(MySQLStatement { conn: self.conn.clone(), sql: sql.to_owned() })))
     }
 }
 
-struct MySQLStatement {}
+struct MySQLStatement {
+    conn: Rc<RefCell<my::PooledConn>>,
+    sql: String
+
+}
 
 impl rdbc::Statement for MySQLStatement {
-    fn execute_query(&self) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet>>> {
+    fn execute_query(&mut self) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet>>> {
+        let mut conn = self.conn.borrow_mut();
+        conn.query(&self.sql);
         unimplemented!()
     }
 
-    fn execute_update(&self) -> rdbc::Result<usize> {
+    fn execute_update(&mut self) -> rdbc::Result<usize> {
         unimplemented!()
     }
 }
@@ -85,12 +91,14 @@ mod tests {
 
     use super::*;
     use rdbc::{Connection, Statement, ResultSet};
+    use std::borrow::BorrowMut;
 
-//    #[test]
+    //    #[test]
     fn it_works() {
         let driver = MySQLDriver::new();
         let conn = driver.connect("mysql://root:password@localhost:3307/mysql").unwrap();
         let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
+        let mut stmt = stmt.borrow_mut();
         let rs = stmt.execute_query().unwrap();
         let mut rs = rs.borrow_mut();
         while rs.next() {

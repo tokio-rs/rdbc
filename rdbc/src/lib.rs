@@ -9,7 +9,7 @@
 //! ```rust,ignore
 //! let driver = PostgresDriver::new();
 //! let conn = driver.connect("postgres://postgres@localhost:5433");
-//! let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
+//! let mut stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
 //! let rs = stmt.execute_query().unwrap();
 //! let mut rs = rs.borrow_mut();
 //! while rs.next() {
@@ -25,15 +25,15 @@ pub type Result<T> = std::result::Result<T, String>;
 
 /// Represents a connection to a database
 pub trait Connection {
-    fn create_statement(&self, sql: &str) -> Result<Rc<dyn Statement>>;
+    fn create_statement(&self, sql: &str) -> Result<Rc<RefCell<dyn Statement>>>;
 }
 
 /// Represents a statement
 pub trait Statement {
     /// Execute a query that is expected to return a result set, such as a `SELECT` statement
-    fn execute_query(&self) -> Result<Rc<RefCell<dyn ResultSet>>>;
+    fn execute_query(&mut self) -> Result<Rc<RefCell<dyn ResultSet>>>;
     /// Execute a query that is expected to update some rows.
-    fn execute_update(&self) -> Result<usize>;
+    fn execute_update(&mut self) -> Result<usize>;
 }
 
 /// Result set from executing a query against a statement

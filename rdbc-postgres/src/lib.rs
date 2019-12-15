@@ -7,6 +7,19 @@ use postgres::{Connection, TlsMode};
 use rdbc::ResultSet;
 use postgres::rows::Rows;
 
+struct PostgresDriver {}
+
+impl PostgresDriver {
+    pub fn new() -> Self {
+        PostgresDriver {}
+    }
+
+    pub fn connect(&self, url: &str) -> Rc<rdbc::Connection> {
+        let conn = postgres::Connection::connect(url, TlsMode::None).unwrap();
+        Rc::new(PConnection::new(conn))
+    }
+}
+
 struct PConnection {
     conn: Rc<Connection>
 }
@@ -79,8 +92,8 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let conn = postgres::Connection::connect("postgres://postgres@localhost:5433", TlsMode::None).unwrap();
-        let conn: Rc<dyn Connection> = Rc::new(PConnection::new(conn));
+        let driver = PostgresDriver::new();
+        let conn = driver.connect("postgres://postgres@localhost:5433");
         let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
         let rs = stmt.execute_query().unwrap();
         let mut rs = rs.borrow_mut();

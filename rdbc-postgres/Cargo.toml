@@ -1,13 +1,13 @@
 [package]
 name = "rdbc-postgres"
 description = " Postgres RDBC Driver"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Andy Grove <andygrove73@gmail.com>"]
 license = "Apache-2.0"
 
 edition = "2018"
 
 [dependencies]
-#rdbc = { path = "../rdbc" }
-rdbc = "0.1.0"
+rdbc = { path = "../rdbc" }
+rdbc = "0.1.1"
 postgres = "0.15.2"

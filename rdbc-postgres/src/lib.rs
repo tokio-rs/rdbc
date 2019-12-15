@@ -1,36 +1,43 @@
 use rdbc;
 
+use std::rc::Rc;
+use std::cell::RefCell;
+
 use postgres::{Connection, TlsMode};
 use rdbc::ResultSet;
+use postgres::rows::Rows;
 
 struct PConnection {
-    conn: Box<Connection>
+    conn: Rc<Connection>
 }
 
 impl PConnection {
     pub fn new(conn: Connection) -> Self {
-        Self { conn: Box::new(conn) }
+        Self { conn: Rc::new(conn) }
     }
 }
 
 impl rdbc::Connection for PConnection {
 
-    fn create_statement(&self, sql: &str) -> rdbc::Result<Box<dyn rdbc::Statement>> {
-        unimplemented!()
+    fn create_statement(&self, sql: &str) -> rdbc::Result<Rc<dyn rdbc::Statement>> {
+        Ok(Rc::new(PStatement {
+            conn: self.conn.clone(),
+            sql: sql.to_owned()
+        }))
     }
 
 }
 
 struct PStatement {
-    conn: Box<Connection>,
+    conn: Rc<Connection>,
     sql: String
 }
 
 impl rdbc::Statement for PStatement {
 
-    fn execute_query(&self) -> rdbc::Result<Box<dyn ResultSet>> {
-        let rs = self.conn.query(&self.sql, &[]).unwrap();
-        unimplemented!()
+    fn execute_query(&self) -> rdbc::Result<Rc<RefCell<dyn ResultSet>>> {
+        let rows: Rows = self.conn.query(&self.sql, &[]).unwrap();
+        Ok(Rc::new(RefCell::new(PResultSet { i: 0, rows })))
     }
 
     fn execute_update(&self) -> rdbc::Result<usize> {
@@ -38,40 +45,47 @@ impl rdbc::Statement for PStatement {
     }
 }
 
+struct PResultSet {
+    i: usize,
+    rows: Rows
+}
+
+impl rdbc::ResultSet for PResultSet {
+
+    fn next(&mut self) -> bool {
+        if self.i+1 < self.rows.len() {
+            self.i = self.i + 1;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn get_i32(&self, i: usize) -> i32 {
+        self.rows.get(self.i).get(i)
+    }
+
+    fn get_string(&self, i: usize) -> String {
+        self.rows.get(self.i).get(i)
+    }
+
+}
+
 #[cfg(test)]
 mod tests {
 
     use super::*;
-    use rdbc::Connection;
+    use rdbc::{Connection, Statement, ResultSet};
 
     #[test]
     fn it_works() {
         let conn = postgres::Connection::connect("postgres://postgres@localhost:5433", TlsMode::None).unwrap();
-        let conn: Box<Connection> = Box::new(PConnection::new(conn));
-
-        let stmt = conn.create_statement("CREATE TABLE person (
-                    id              SERIAL PRIMARY KEY,
-                    name            VARCHAR NOT NULL,
-                    data            BYTEA
-                  )").unwrap();
-
-        let rs = stmt.execute_update().unwrap();
-
-
-//        let me = Person {
-//            id: 0,
-//            name: "Steven".to_string(),
-//            data: None,
-//        };
-//        conn.execute("INSERT INTO person (name, data) VALUES ($1, $2)",
-//                     &[&me.name, &me.data]).unwrap();
-//        for row in &conn.query("SELECT id, name, data FROM person", &[]).unwrap() {
-//            let person = Person {
-//                id: row.get(0),
-//                name: row.get(1),
-//                data: row.get(2),
-//            };
-//            println!("Found person {}", person.name);
-//        }
+        let conn: Rc<dyn Connection> = Rc::new(PConnection::new(conn));
+        let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
+        let rs = stmt.execute_query().unwrap();
+        let mut rs = rs.borrow_mut();
+        while rs.next() {
+            println!("{}", rs.get_string(1))
+        }
     }
 }

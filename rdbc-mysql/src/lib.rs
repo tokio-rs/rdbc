@@ -4,7 +4,8 @@
 //!
 //! The RDBC (Rust DataBase Connectivity) API is loosely based on the ODBC and JDBC standards.
 //!
-//! ```
+//! ```rust,ignore
+//! use rdbc_mysql::MySQLDriver;
 //! let driver = MySQLDriver::new();
 //! let conn = driver.connect("mysql://root:password@localhost:3307/mysql").unwrap();
 //! let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
@@ -21,7 +22,7 @@ use mysql as my;
 use std::rc::Rc;
 use std::cell::RefCell;
 
-struct MySQLDriver {}
+pub struct MySQLDriver {}
 
 impl MySQLDriver {
 

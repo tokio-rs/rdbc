@@ -6,7 +6,7 @@
 //!
 //! The following example demonstrates how RDBC can be used to run a trivial query against Postgres.
 //!
-//! ```
+//! ```rust,ignore
 //! let driver = PostgresDriver::new();
 //! let conn = driver.connect("postgres://postgres@localhost:5433");
 //! let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();

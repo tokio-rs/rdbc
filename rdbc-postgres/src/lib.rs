@@ -4,7 +4,8 @@
 //!
 //! The RDBC (Rust DataBase Connectivity) API is loosely based on the ODBC and JDBC standards.
 //!
-//! ```
+//! ```rust,ignore
+//! use rdbc_postgres::PostgresDriver;
 //! let driver = PostgresDriver::new();
 //! let conn = driver.connect("postgres://postgres@localhost:5433");
 //! let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
@@ -24,7 +25,7 @@ use postgres::{Connection, TlsMode};
 use rdbc::ResultSet;
 use postgres::rows::Rows;
 
-struct PostgresDriver {}
+pub struct PostgresDriver {}
 
 impl PostgresDriver {
     pub fn new() -> Self {

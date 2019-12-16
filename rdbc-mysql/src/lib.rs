@@ -21,8 +21,11 @@ use mysql as my;
 
 use std::rc::Rc;
 use std::cell::RefCell;
+use mysql::{OptsBuilder, Opts, Conn};
 
-pub struct MySQLDriver {}
+pub struct MySQLDriver {
+
+}
 
 impl MySQLDriver {
 
@@ -31,27 +34,32 @@ impl MySQLDriver {
     }
 
     pub fn connect(&self, url: &str) -> rdbc::Result<Rc<dyn rdbc::Connection>> {
-        let pool = my::Pool::new(url).unwrap();
-        Ok(Rc::new(MySQLConnection { pool }))
+        let opts = Opts::from_url(&url).expect("DATABASE_URL invalid");
+        let mut conn = Conn::new(opts).unwrap();
+        Ok(Rc::new(MySQLConnection { conn: Rc::new(RefCell::new(conn)) }))
     }
 
 }
 
 struct MySQLConnection {
-    pool: my::Pool
+    conn: Rc<RefCell<my::Conn>>
 }
 
 
 impl rdbc::Connection for MySQLConnection {
     fn create_statement(&self, sql: &str) -> rdbc::Result<Rc<dyn rdbc::Statement>> {
-        unimplemented!()
+        Ok(Rc::new(MySQLStatement { conn: self.conn.clone(), sql: sql.to_owned() }))
     }
 }
 
-struct MySQLStatement {}
+struct MySQLStatement {
+    conn: Rc<RefCell<my::Conn>>,
+    sql: String
+}
 
 impl rdbc::Statement for MySQLStatement {
     fn execute_query(&self) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet>>> {
+        //let x = self.conn.query(sql).unwrap();
         unimplemented!()
     }
 

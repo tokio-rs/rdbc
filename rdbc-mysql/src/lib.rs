@@ -16,19 +16,16 @@
 //! }
 //! ```
 
-use rdbc;
 use mysql as my;
+use rdbc;
 
-use std::rc::Rc;
+use mysql::{Conn, Opts, OptsBuilder};
 use std::cell::RefCell;
-use mysql::{OptsBuilder, Opts, Conn};
+use std::rc::Rc;
 
-pub struct MySQLDriver {
-
-}
+pub struct MySQLDriver {}
 
 impl MySQLDriver {
-
     pub fn new() -> Self {
         MySQLDriver {}
     }
@@ -36,25 +33,28 @@ impl MySQLDriver {
     pub fn connect(&self, url: &str) -> rdbc::Result<Rc<dyn rdbc::Connection>> {
         let opts = Opts::from_url(&url).expect("DATABASE_URL invalid");
         let mut conn = Conn::new(opts).unwrap();
-        Ok(Rc::new(MySQLConnection { conn: Rc::new(RefCell::new(conn)) }))
+        Ok(Rc::new(MySQLConnection {
+            conn: Rc::new(RefCell::new(conn)),
+        }))
     }
-
 }
 
 struct MySQLConnection {
-    conn: Rc<RefCell<my::Conn>>
+    conn: Rc<RefCell<my::Conn>>,
 }
-
 
 impl rdbc::Connection for MySQLConnection {
     fn create_statement(&self, sql: &str) -> rdbc::Result<Rc<dyn rdbc::Statement>> {
-        Ok(Rc::new(MySQLStatement { conn: self.conn.clone(), sql: sql.to_owned() }))
+        Ok(Rc::new(MySQLStatement {
+            conn: self.conn.clone(),
+            sql: sql.to_owned(),
+        }))
     }
 }
 
 struct MySQLStatement {
     conn: Rc<RefCell<my::Conn>>,
-    sql: String
+    sql: String,
 }
 
 impl rdbc::Statement for MySQLStatement {
@@ -84,20 +84,20 @@ impl rdbc::ResultSet for MySQLResultSet {
     }
 }
 
-
 //
-
 
 #[cfg(test)]
 mod tests {
 
     use super::*;
-    use rdbc::{Connection, Statement, ResultSet};
+    use rdbc::{Connection, ResultSet, Statement};
 
-//    #[test]
+    //    #[test]
     fn it_works() {
         let driver = MySQLDriver::new();
-        let conn = driver.connect("mysql://root:password@localhost:3307/mysql").unwrap();
+        let conn = driver
+            .connect("mysql://root:password@localhost:3307/mysql")
+            .unwrap();
         let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
         let rs = stmt.execute_query().unwrap();
         let mut rs = rs.borrow_mut();

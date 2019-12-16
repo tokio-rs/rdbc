@@ -17,8 +17,8 @@
 //! }
 //! ```
 
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
 /// RDBC Result type
 pub type Result<T> = std::result::Result<T, String>;
@@ -46,4 +46,3 @@ pub trait ResultSet {
     fn get_string(&self, i: usize) -> String;
     //TODO add accessors for all data types
 }
-

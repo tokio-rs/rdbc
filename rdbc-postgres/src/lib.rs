@@ -18,12 +18,12 @@
 
 use rdbc;
 
-use std::rc::Rc;
 use std::cell::RefCell;
+use std::rc::Rc;
 
+use postgres::rows::Rows;
 use postgres::{Connection, TlsMode};
 use rdbc::ResultSet;
-use postgres::rows::Rows;
 
 pub struct PostgresDriver {}
 
@@ -39,33 +39,32 @@ impl PostgresDriver {
 }
 
 struct PConnection {
-    conn: Rc<Connection>
+    conn: Rc<Connection>,
 }
 
 impl PConnection {
     pub fn new(conn: Connection) -> Self {
-        Self { conn: Rc::new(conn) }
+        Self {
+            conn: Rc::new(conn),
+        }
     }
 }
 
 impl rdbc::Connection for PConnection {
-
     fn create_statement(&self, sql: &str) -> rdbc::Result<Rc<dyn rdbc::Statement>> {
         Ok(Rc::new(PStatement {
             conn: self.conn.clone(),
-            sql: sql.to_owned()
+            sql: sql.to_owned(),
         }))
     }
-
 }
 
 struct PStatement {
     conn: Rc<Connection>,
-    sql: String
+    sql: String,
 }
 
 impl rdbc::Statement for PStatement {
-
     fn execute_query(&self) -> rdbc::Result<Rc<RefCell<dyn ResultSet>>> {
         let rows: Rows = self.conn.query(&self.sql, &[]).unwrap();
         Ok(Rc::new(RefCell::new(PResultSet { i: 0, rows })))
@@ -78,13 +77,12 @@ impl rdbc::Statement for PStatement {
 
 struct PResultSet {
     i: usize,
-    rows: Rows
+    rows: Rows,
 }
 
 impl rdbc::ResultSet for PResultSet {
-
     fn next(&mut self) -> bool {
-        if self.i+1 < self.rows.len() {
+        if self.i + 1 < self.rows.len() {
             self.i = self.i + 1;
             true
         } else {
@@ -99,14 +97,13 @@ impl rdbc::ResultSet for PResultSet {
     fn get_string(&self, i: usize) -> String {
         self.rows.get(self.i).get(i)
     }
-
 }
 
 #[cfg(test)]
 mod tests {
 
     use super::*;
-    use rdbc::{Connection, Statement, ResultSet};
+    use rdbc::{Connection, ResultSet, Statement};
 
     //#[test]
     fn it_works() {

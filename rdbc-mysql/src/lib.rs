@@ -83,7 +83,6 @@ impl<'a> MySQLResultSet<'a> {
 mod tests {
 
     use super::*;
-    use std::borrow::BorrowMut;
 
     #[test]
     fn query_direct() {

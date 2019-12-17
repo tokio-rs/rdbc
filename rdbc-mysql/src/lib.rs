@@ -45,7 +45,7 @@ pub struct MySQLConnection {
 
 impl /*rdbc::Connection for */ MySQLConnection {
 
-    pub fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<MySQLResultSet>>> {
+    pub fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
         let result = self.conn.query(sql).unwrap();
         Ok(Rc::new(RefCell::new(MySQLResultSet { result, row: None })))
     }
@@ -60,21 +60,21 @@ pub struct MySQLResultSet<'a> {
     row: Option<my::Result<my::Row>>
 }
 
-impl<'a> /*rdbc::ResultSet for */ MySQLResultSet<'a> {
+impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
 
-    pub fn next(&mut self) -> bool {
+    fn next(&mut self) -> bool {
         self.row = self.result.next();
         self.row.is_some()
     }
 
-    pub fn get_i32(&self, i: usize) -> Option<i32> {
+    fn get_i32(&self, i: usize) -> Option<i32> {
         match &self.row {
             Some(Ok(row)) => row.get(i-1),
             _ => None
         }
     }
 
-    pub fn get_string(&self, i: usize) -> Option<String> {
+    fn get_string(&self, i: usize) -> Option<String> {
         match &self.row {
             Some(Ok(row)) => row.get(i-1),
             _ => None
@@ -116,7 +116,7 @@ mod tests {
         let mut conn = conn.as_ref().borrow_mut();
 
         let rs = conn.execute_query("SELECT 1").unwrap();
-        let mut rs = rs.as_ref().borrow_mut();
+        let mut rs = rs.borrow_mut();
 
         while rs.next() {
             println!("{:?}", rs.get_i32(1))

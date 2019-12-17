@@ -43,4 +43,12 @@ while rs.next() {
 }
 ```
 
- 
+# Building
+
+```bash
+docker-compose up -d
+```
+
+```bash
+cargo test
+``` 

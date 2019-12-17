@@ -1,0 +1,22 @@
+version: "3.3"
+services:
+  mysql:
+    image: "mysql:5.7"
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=secret
+    ports:
+      - 3307:3306
+  postgres:
+    image: "postgres"
+    #   Setup the username, password, and database name. You can changes these values.
+    environment:
+      - POSTGRES_USER=rdbc
+      - POSTGRES_PASSWORD=secret
+    ports:
+      - "5433:5432"
+    #   Set a volume so that database is not lost after shutting down the container.
+    #   I used the name postgres-data but you can changed it to something else.
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data

@@ -105,15 +105,15 @@ mod tests {
     use super::*;
     use rdbc::{Connection, ResultSet, Statement};
 
-    //#[test]
-    fn it_works() {
-        let driver = PostgresDriver::new();
-        let conn = driver.connect("postgres://postgres@localhost:5433");
-        let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
-        let rs = stmt.execute_query().unwrap();
-        let mut rs = rs.borrow_mut();
-        while rs.next() {
-            println!("{}", rs.get_string(1))
-        }
-    }
+//    #[test]
+//    fn it_works() {
+//        let driver = PostgresDriver::new();
+//        let conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433");
+//        let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
+//        let rs = stmt.execute_query().unwrap();
+//        let mut rs = rs.borrow_mut();
+//        while rs.next() {
+//            println!("{}", rs.get_string(1))
+//        }
+//    }
 }

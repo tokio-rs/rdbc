@@ -92,17 +92,22 @@ mod tests {
     use super::*;
     use rdbc::{Connection, ResultSet, Statement};
 
-    //    #[test]
-    fn it_works() {
-        let driver = MySQLDriver::new();
-        let conn = driver
-            .connect("mysql://root:password@localhost:3307/mysql")
-            .unwrap();
-        let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
-        let rs = stmt.execute_query().unwrap();
-        let mut rs = rs.borrow_mut();
-        while rs.next() {
-            println!("{}", rs.get_string(1))
-        }
+    #[test]
+    fn use_crate() {
+        let pool = my::Pool::new("mysql://root:secret@127.0.0.1:3307/mysql").unwrap();
     }
+
+//    #[test]
+//    fn it_works() {
+//        let driver = MySQLDriver::new();
+//        let conn = driver
+//            .connect("mysql://root:secret@127.0.0.1:3307")
+//            .unwrap();
+//        let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
+//        let rs = stmt.execute_query().unwrap();
+//        let mut rs = rs.borrow_mut();
+//        while rs.next() {
+//            println!("{}", rs.get_string(1))
+//        }
+//    }
 }

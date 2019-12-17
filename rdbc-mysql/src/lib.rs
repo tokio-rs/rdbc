@@ -66,14 +66,14 @@ impl<'a> MySQLResultSet<'a> {
 
     pub fn get_i32(&self, i: usize) -> Option<i32> {
         match &self.row {
-            Some(Ok(row)) => row.get(i),
+            Some(Ok(row)) => row.get(i-1),
             _ => None
         }
     }
 
     pub fn get_string(&self, i: usize) -> Option<String> {
         match &self.row {
-            Some(Ok(row)) => row.get(i),
+            Some(Ok(row)) => row.get(i-1),
             _ => None
         }
     }

@@ -21,8 +21,9 @@ use std::rc::Rc;
 
 use mysql as my;
 use rdbc;
+
+use std::marker::PhantomData;
 use mysql::QueryResult;
-use mysql::serde::export::PhantomData;
 
 pub struct MySQLDriver {
 
@@ -48,10 +49,9 @@ pub struct MySQLConnection<'a> {
 
 impl<'a> MySQLConnection<'a> {
 
-    pub fn execute_query(&'a mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet<'a>>>> {
-        let result: QueryResult<'a> = self.conn.query(sql).unwrap();
-        let rs: dyn rdbc::ResultSet<'a> = MySQLResultSet { result, row: None };
-        Ok(Rc::new(RefCell::new(rs)))
+    pub fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet>>> {
+        let result = self.conn.query(sql).unwrap();
+        Ok(Rc::new(RefCell::new(MySQLResultSet { result, row: None })))
     }
 
 }
@@ -61,7 +61,7 @@ pub struct MySQLResultSet<'a> {
     row: Option<my::Result<my::Row>>
 }
 
-impl<'a> rdbc::ResultSet<'_> for MySQLResultSet<'a> {
+impl<'a> rdbc::ResultSet<'a> for MySQLResultSet<'a> {
 
     fn next(&mut self) -> bool {
         self.row = self.result.next();

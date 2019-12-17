@@ -32,9 +32,9 @@ impl PostgresDriver {
         PostgresDriver {}
     }
 
-    pub fn connect(&self, url: &str) -> Rc<rdbc::Connection> {
+    pub fn connect(&self, url: &str) -> Rc<RefCell<dyn rdbc::Connection>> {
         let conn = postgres::Connection::connect(url, TlsMode::None).unwrap();
-        Rc::new(PConnection::new(conn))
+        Rc::new(RefCell::new(PConnection::new(conn)))
     }
 }
 
@@ -51,26 +51,13 @@ impl PConnection {
 }
 
 impl rdbc::Connection for PConnection {
-    fn create_statement(&self, sql: &str) -> rdbc::Result<Rc<dyn rdbc::Statement>> {
-        Ok(Rc::new(PStatement {
-            conn: self.conn.clone(),
-            sql: sql.to_owned(),
-        }))
-    }
-}
 
-struct PStatement {
-    conn: Rc<Connection>,
-    sql: String,
-}
-
-impl rdbc::Statement for PStatement {
-    fn execute_query(&self) -> rdbc::Result<Rc<RefCell<dyn ResultSet>>> {
-        let rows: Rows = self.conn.query(&self.sql, &[]).unwrap();
+    fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn ResultSet>>> {
+        let rows: Rows = self.conn.query(sql, &[]).unwrap();
         Ok(Rc::new(RefCell::new(PResultSet { i: 0, rows })))
     }
 
-    fn execute_update(&self) -> rdbc::Result<usize> {
+    fn execute_update(&mut self, sql: &str) -> rdbc::Result<usize> {
         unimplemented!()
     }
 }
@@ -81,6 +68,7 @@ struct PResultSet {
 }
 
 impl rdbc::ResultSet for PResultSet {
+
     fn next(&mut self) -> bool {
         if self.i + 1 < self.rows.len() {
             self.i = self.i + 1;
@@ -90,11 +78,11 @@ impl rdbc::ResultSet for PResultSet {
         }
     }
 
-    fn get_i32(&self, i: usize) -> i32 {
+    fn get_i32(&self, i: usize) -> Option<i32> {
         self.rows.get(self.i).get(i)
     }
 
-    fn get_string(&self, i: usize) -> String {
+    fn get_string(&self, i: usize) -> Option<String> {
         self.rows.get(self.i).get(i)
     }
 }
@@ -103,17 +91,17 @@ impl rdbc::ResultSet for PResultSet {
 mod tests {
 
     use super::*;
-    use rdbc::{Connection, ResultSet, Statement};
+    use std::borrow::BorrowMut;
 
-//    #[test]
-//    fn it_works() {
-//        let driver = PostgresDriver::new();
-//        let conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433");
-//        let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
-//        let rs = stmt.execute_query().unwrap();
-//        let mut rs = rs.borrow_mut();
-//        while rs.next() {
-//            println!("{}", rs.get_string(1))
-//        }
-//    }
+    #[test]
+    fn it_works() {
+        let driver = PostgresDriver::new();
+        let conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433");
+        let mut conn = conn.as_ref().borrow_mut();
+        let rs = conn.execute_query("SELECT 1").unwrap();
+        let mut rs = rs.as_ref().borrow_mut();
+        while rs.next() {
+            println!("{:?}", rs.get_i32(1))
+        }
+    }
 }

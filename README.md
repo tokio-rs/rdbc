@@ -9,7 +9,7 @@ Love them or hate them, the [ODBC](https://en.wikipedia.org/wiki/Open_Database_C
 
 I believe there is a need for a Rust equivalent so I have started this experimental project and aim to provide an RDBC API and reference implementations (drivers) for both Postgres and MySQL. 
 
-It should then be easy for others to create new RDBC drivers for other databases.
+Note that the provided RDBC drivers are just wrappers around the existing `postgres` and `mysql` crates and this project is not attempting to build new drivers from scratch but rather make it possible to leverage existing drivers through a common API.
 
 # Why do we need this when we have Diesel?
 
@@ -45,10 +45,10 @@ while rs.next() {
 
 # Building
 
+Use `docker-compose` to start up Postgres and MySQL containers to test against.
+
 ```bash
 docker-compose up -d
 ```
 
-```bash
-cargo test
-``` 
+Use `cargo test` to run the unit tests.

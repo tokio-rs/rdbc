@@ -21,6 +21,8 @@ use std::rc::Rc;
 
 use mysql as my;
 use rdbc;
+use mysql::QueryResult;
+use mysql::serde::export::PhantomData;
 
 pub struct MySQLDriver {
 
@@ -35,19 +37,21 @@ impl MySQLDriver {
     pub fn connect(&self, url: &str) -> rdbc::Result<Rc<RefCell<MySQLConnection>>> {
         let opts = my::Opts::from_url(&url).expect("DATABASE_URL invalid");
         let conn = my::Conn::new(opts).unwrap();
-        Ok(Rc::new(RefCell::new(MySQLConnection { conn })))
+        Ok(Rc::new(RefCell::new(MySQLConnection { conn, phantom: PhantomData })))
     }
 }
 
-pub struct MySQLConnection {
+pub struct MySQLConnection<'a> {
     conn: my::Conn,
+    phantom: PhantomData<&'a usize>
 }
 
-impl MySQLConnection {
+impl<'a> MySQLConnection<'a> {
 
-    pub fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<MySQLResultSet>>> {
-        let result = self.conn.query(sql).unwrap();
-        Ok(Rc::new(RefCell::new(MySQLResultSet { result, row: None })))
+    pub fn execute_query(&'a mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet<'a>>>> {
+        let result: QueryResult<'a> = self.conn.query(sql).unwrap();
+        let rs: dyn rdbc::ResultSet<'a> = MySQLResultSet { result, row: None };
+        Ok(Rc::new(RefCell::new(rs)))
     }
 
 }
@@ -57,21 +61,21 @@ pub struct MySQLResultSet<'a> {
     row: Option<my::Result<my::Row>>
 }
 
-impl<'a> MySQLResultSet<'a> {
+impl<'a> rdbc::ResultSet<'_> for MySQLResultSet<'a> {
 
-    pub fn next(&mut self) -> bool {
+    fn next(&mut self) -> bool {
         self.row = self.result.next();
         self.row.is_some()
     }
 
-    pub fn get_i32(&self, i: usize) -> Option<i32> {
+    fn get_i32(&self, i: usize) -> Option<i32> {
         match &self.row {
             Some(Ok(row)) => row.get(i-1),
             _ => None
         }
     }
 
-    pub fn get_string(&self, i: usize) -> Option<String> {
+    fn get_string(&self, i: usize) -> Option<String> {
         match &self.row {
             Some(Ok(row)) => row.get(i-1),
             _ => None

@@ -32,7 +32,7 @@ pub trait Connection {
 }
 
 /// Result set from executing a query against a statement
-pub trait ResultSet {
+pub trait ResultSet<'a> {
     /// Move the cursor to the next available row if one exists and return true if it does
     fn next(&mut self) -> bool;
     /// Get the i32 value at column `i` (1-based)

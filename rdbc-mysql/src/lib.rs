@@ -43,14 +43,14 @@ pub struct MySQLConnection {
     conn: my::Conn,
 }
 
-impl /*rdbc::Connection for */ MySQLConnection {
+impl /*rdbc::Connection for*/ MySQLConnection {
 
-    pub fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
+    fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
         let result = self.conn.query(sql).unwrap();
         Ok(Rc::new(RefCell::new(MySQLResultSet { result, row: None })))
     }
 
-    pub fn execute_update(&mut self, sql: &str) -> Result<usize, String> {
+    fn execute_update(&mut self, sql: &str) -> Result<usize, String> {
         unimplemented!()
     }
 }

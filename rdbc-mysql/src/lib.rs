@@ -16,98 +16,107 @@
 //! }
 //! ```
 
-use mysql as my;
-use rdbc;
-
-use mysql::{Conn, Opts, OptsBuilder};
 use std::cell::RefCell;
 use std::rc::Rc;
 
-pub struct MySQLDriver {}
+use mysql as my;
+use rdbc;
+
+pub struct MySQLDriver {
+
+}
 
 impl MySQLDriver {
+
     pub fn new() -> Self {
         MySQLDriver {}
     }
 
-    pub fn connect(&self, url: &str) -> rdbc::Result<Rc<dyn rdbc::Connection>> {
-        let opts = Opts::from_url(&url).expect("DATABASE_URL invalid");
-        let mut conn = Conn::new(opts).unwrap();
-        Ok(Rc::new(MySQLConnection {
-            conn: Rc::new(RefCell::new(conn)),
-        }))
+    pub fn connect(&self, url: &str) -> rdbc::Result<Rc<RefCell<MySQLConnection>>> {
+        let opts = my::Opts::from_url(&url).expect("DATABASE_URL invalid");
+        let conn = my::Conn::new(opts).unwrap();
+        Ok(Rc::new(RefCell::new(MySQLConnection { conn })))
     }
 }
 
-struct MySQLConnection {
-    conn: Rc<RefCell<my::Conn>>,
+pub struct MySQLConnection {
+    conn: my::Conn,
 }
 
-impl rdbc::Connection for MySQLConnection {
-    fn create_statement(&self, sql: &str) -> rdbc::Result<Rc<dyn rdbc::Statement>> {
-        Ok(Rc::new(MySQLStatement {
-            conn: self.conn.clone(),
-            sql: sql.to_owned(),
-        }))
+impl MySQLConnection {
+
+    pub fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<MySQLResultSet>>> {
+        let result = self.conn.query(sql).unwrap();
+        Ok(Rc::new(RefCell::new(MySQLResultSet { result, row: None })))
     }
+
 }
 
-struct MySQLStatement {
-    conn: Rc<RefCell<my::Conn>>,
-    sql: String,
+pub struct MySQLResultSet<'a> {
+    result: my::QueryResult<'a>,
+    row: Option<my::Result<my::Row>>
 }
 
-impl rdbc::Statement for MySQLStatement {
-    fn execute_query(&self) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet>>> {
-        //let x = self.conn.query(sql).unwrap();
-        unimplemented!()
+impl<'a> MySQLResultSet<'a> {
+
+    pub fn next(&mut self) -> bool {
+        self.row = self.result.next();
+        self.row.is_some()
     }
 
-    fn execute_update(&self) -> rdbc::Result<usize> {
-        unimplemented!()
-    }
-}
-
-struct MySQLResultSet {}
-
-impl rdbc::ResultSet for MySQLResultSet {
-    fn next(&mut self) -> bool {
-        unimplemented!()
+    pub fn get_i32(&self, i: usize) -> Option<i32> {
+        match &self.row {
+            Some(Ok(row)) => row.get(i-1),
+            _ => None
+        }
     }
 
-    fn get_i32(&self, i: usize) -> i32 {
-        unimplemented!()
-    }
-
-    fn get_string(&self, i: usize) -> String {
-        unimplemented!()
+    pub fn get_string(&self, i: usize) -> Option<String> {
+        match &self.row {
+            Some(Ok(row)) => row.get(i-1),
+            _ => None
+        }
     }
 }
-
-//
 
 #[cfg(test)]
 mod tests {
 
     use super::*;
-    use rdbc::{Connection, ResultSet, Statement};
 
     #[test]
-    fn use_crate() {
-        let pool = my::Pool::new("mysql://root:secret@127.0.0.1:3307/mysql").unwrap();
+    fn query_direct() {
+
+        let url = "mysql://root:secret@127.0.0.1:3307/mysql";
+
+        let opts = my::Opts::from_url(&url).expect("DATABASE_URL invalid");
+        let mut conn = my::Conn::new(opts).unwrap();
+
+        let result = conn.query("SELECT 1").unwrap();
+
+        for row in result {
+            let row = row.unwrap();
+            let value: Option<u32> = row.get(0);
+            println!("{}", value.unwrap());
+        }
     }
 
-//    #[test]
-//    fn it_works() {
-//        let driver = MySQLDriver::new();
-//        let conn = driver
-//            .connect("mysql://root:secret@127.0.0.1:3307")
-//            .unwrap();
-//        let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
-//        let rs = stmt.execute_query().unwrap();
-//        let mut rs = rs.borrow_mut();
-//        while rs.next() {
-//            println!("{}", rs.get_string(1))
-//        }
-//    }
+    #[test]
+    fn query_via_rdbc() {
+
+        let driver = MySQLDriver::new();
+
+        let conn = driver
+            .connect("mysql://root:secret@127.0.0.1:3307")
+            .unwrap();
+
+        let mut conn = conn.as_ref().borrow_mut();
+
+        let rs = conn.execute_query("SELECT 1").unwrap();
+        let mut rs = rs.as_ref().borrow_mut();
+
+        while rs.next() {
+            println!("{:?}", rs.get_i32(1))
+        }
+    }
 }

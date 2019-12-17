@@ -43,13 +43,16 @@ pub struct MySQLConnection {
     conn: my::Conn,
 }
 
-impl MySQLConnection {
+impl /*rdbc::Connection for */ MySQLConnection {
 
     pub fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<MySQLResultSet>>> {
         let result = self.conn.query(sql).unwrap();
         Ok(Rc::new(RefCell::new(MySQLResultSet { result, row: None })))
     }
 
+    pub fn execute_update(&mut self, sql: &str) -> Result<usize, String> {
+        unimplemented!()
+    }
 }
 
 pub struct MySQLResultSet<'a> {
@@ -57,7 +60,7 @@ pub struct MySQLResultSet<'a> {
     row: Option<my::Result<my::Row>>
 }
 
-impl<'a> MySQLResultSet<'a> {
+impl<'a> /*rdbc::ResultSet for */ MySQLResultSet<'a> {
 
     pub fn next(&mut self) -> bool {
         self.row = self.result.next();

@@ -36,15 +36,16 @@ impl MySQLDriver {
     pub fn connect(&self, url: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection + '_>>> {
         let opts = my::Opts::from_url(&url).expect("DATABASE_URL invalid");
         let conn = my::Conn::new(opts).unwrap();
-        Ok(Rc::new(RefCell::new(MySQLConnection { conn })))
+        Ok(Rc::new(RefCell::new(MySQLConnection { conn, phantom: PhantomData })))
     }
 }
 
-pub struct MySQLConnection {
+pub struct MySQLConnection<'a> {
     conn: my::Conn,
+    phantom: PhantomData<&'a usize>
 }
 
-impl<'a> rdbc::Connection<'a> for MySQLConnection {
+impl<'a> rdbc::Connection<'a> for MySQLConnection<'a> {
 
     fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + 'a>>> {
         let result = self.conn.query(sql).unwrap();

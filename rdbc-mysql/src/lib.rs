@@ -18,7 +18,6 @@
 
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::marker::PhantomData;
 
 use mysql as my;
 use rdbc;
@@ -36,23 +35,22 @@ impl MySQLDriver {
     pub fn connect(&self, url: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection + '_>>> {
         let opts = my::Opts::from_url(&url).expect("DATABASE_URL invalid");
         let conn = my::Conn::new(opts).unwrap();
-        Ok(Rc::new(RefCell::new(MySQLConnection { conn, phantom: PhantomData })))
+        Ok(Rc::new(RefCell::new(MySQLConnection { conn })))
     }
 }
 
-pub struct MySQLConnection<'a> {
+pub struct MySQLConnection {
     conn: my::Conn,
-    phantom: PhantomData<&'a usize>
 }
 
-impl<'a> rdbc::Connection<'a> for MySQLConnection<'a> {
+impl rdbc::Connection for MySQLConnection {
 
-    fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + 'a>>> {
+    fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
         let result = self.conn.query(sql).unwrap();
         Ok(Rc::new(RefCell::new(MySQLResultSet { result, row: None })))
     }
 
-    fn execute_update(&mut self, sql: &str) -> Result<usize, String> {
+    fn execute_update(&mut self, _sql: &str) -> Result<usize, String> {
         unimplemented!()
     }
 }

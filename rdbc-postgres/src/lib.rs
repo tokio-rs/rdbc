@@ -50,9 +50,9 @@ impl PConnection {
     }
 }
 
-impl<'a> rdbc::Connection<'a> for PConnection {
+impl rdbc::Connection for PConnection {
 
-    fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn ResultSet + 'a>>> {
+    fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn ResultSet + '_>>> {
         let rows: Rows = self.conn.query(sql, &[]).unwrap();
         Ok(Rc::new(RefCell::new(PResultSet { i: 0, rows })))
     }

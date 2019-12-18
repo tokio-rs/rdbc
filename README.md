@@ -15,40 +15,56 @@ Note that the provided RDBC drivers are just wrappers around the existing `postg
 
 This is filling a different need. I love the [Diesel](https://diesel.rs/) approach for building applications but if you are building a generic SQL tool, a business intelligence tool, or a distributed query engine, there is a need to connect to different databases and execute arbitrary SQL. This is where we need a standard API and available drivers.
 
-# Postgres Example
+# Connection Trait
+
+Currently there is a simple `Connection` trait that allows queries to be executed that either return a `ResultSet` for reads or just the number of rows affected by writes. Later, there will be a `Driver` trait as well. 
 
 ```rust
-
-let driver = PostgresDriver::new();
-let conn = driver.connect("postgres://postgres@localhost:5433");
-let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
-let rs = stmt.execute_query().unwrap();
-let mut rs = rs.borrow_mut();
-while rs.next() {
-    println!("{}", rs.get_string(1))
+/// Represents a connection to a database
+pub trait Connection {
+    /// Execute a query that is expected to return a result set, such as a `SELECT` statement
+    fn execute_query(&mut self, sql: &str) -> Result<Rc<RefCell<dyn ResultSet + '_>>>;
+    /// Execute a query that is expected to update some rows.
+    fn execute_update(&mut self, sql: &str) -> Result<usize>;
 }
 ```
 
-# MySQL Example
+# Examples
+
+## Create a Postgres Connection
 
 ```rust
+fn connect_postgres() -> Rc<RefCell<dyn Connection>> {
+    let driver = PostgresDriver::new();
+    driver.connect("postgres://rdbc:secret@127.0.0.1:5433")
+}
+```
 
-let driver = MySQLDriver::new();
-let conn = driver.connect("mysql://root:password@localhost:3307/mysql").unwrap();
-let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
-let rs = stmt.execute_query().unwrap();
-let mut rs = rs.borrow_mut();
-while rs.next() {
-    println!("{}", rs.get_string(1))
+## Create a MySQL Connection
+
+```rust
+fn connect_mysql() -> Rc<RefCell<dyn Connection>> {
+    let driver = MySQLDriver::new();
+    driver.connect("mysql://root:secret@127.0.0.1:3307").unwrap()
+}
+```
+
+## Execute a Query
+
+```rust
+fn execute(conn: Rc<RefCell<dyn Connection>>, sql: &str) {
+    println!("Execute {}", sql);
+    let mut conn = conn.borrow_mut();
+    let rs = conn.execute_query(sql).unwrap();
+    let mut rs = rs.borrow_mut();
+    while rs.next() {
+        println!("{:?}", rs.get_i32(1))
+    }
 }
 ```
 
 # Building
 
 Use `docker-compose` to start up Postgres and MySQL containers to test against.
-
-```bash
-docker-compose up -d
-```
 
 Use `cargo test` to run the unit tests.

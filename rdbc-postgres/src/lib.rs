@@ -56,8 +56,8 @@ impl rdbc::Connection for PConnection {
         Ok(Rc::new(RefCell::new(PResultSet { i: 0, rows })))
     }
 
-    fn execute_update(&mut self, _sql: &str) -> rdbc::Result<usize> {
-        unimplemented!()
+    fn execute_update(&mut self, sql: &str) -> rdbc::Result<usize> {
+        Ok(self.conn.execute(sql, &[]).unwrap() as usize)
     }
 }
 

@@ -46,8 +46,9 @@ impl rdbc::Connection for MySQLConnection {
         Ok(Rc::new(RefCell::new(MySQLResultSet { result, row: None })))
     }
 
-    fn execute_update(&mut self, _sql: &str) -> Result<usize, String> {
-        unimplemented!()
+    fn execute_update(&mut self, sql: &str) -> Result<usize, String> {
+        let result = self.conn.query(sql).unwrap();
+        Ok(result.affected_rows() as usize)
     }
 }
 

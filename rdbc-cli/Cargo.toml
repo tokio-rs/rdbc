@@ -1,7 +1,9 @@
 [package]
 name = "rdbc-cli"
+description = "Command line tool for querying RDBC data sources"
 version = "0.1.2"
 authors = ["Andy Grove <andygrove73@gmail.com>"]
+license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]

@@ -65,7 +65,9 @@ impl rdbc::Connection for PConnection {
     }
 
     fn execute_update(&mut self, sql: &str) -> rdbc::Result<usize> {
-        Ok(self.conn.execute(sql, &[]).unwrap() as usize)
+        self.conn.execute(sql, &[])
+            .map_err(|e| to_rdbc_err(&e))
+            .map(|n| n as usize)
     }
 }
 
@@ -99,11 +101,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn it_works() -> rdbc::Result<()> {
+    fn execute_query() -> rdbc::Result<()> {
         let driver = PostgresDriver::new();
         let conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433")?;
         let mut conn = conn.as_ref().borrow_mut();
-        let rs = conn.execute_query("SELECT 1").unwrap();
+        let rs = conn.execute_query("SELECT 1")?;
         let mut rs = rs.as_ref().borrow_mut();
         while rs.next() {
             println!("{:?}", rs.get_i32(1))

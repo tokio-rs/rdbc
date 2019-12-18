@@ -22,6 +22,11 @@ use std::rc::Rc;
 use mysql as my;
 use rdbc;
 
+/// Convert a MySQL error into an RDBC error
+fn to_rdbc_err(e: &my::error::Error) -> rdbc::Error {
+    rdbc::Error::General(format!("{:?}", e))
+}
+
 pub struct MySQLDriver {}
 
 impl MySQLDriver {
@@ -31,8 +36,9 @@ impl MySQLDriver {
 
     pub fn connect(&self, url: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection + 'static>>> {
         let opts = my::Opts::from_url(&url).expect("DATABASE_URL invalid");
-        let conn = my::Conn::new(opts).unwrap();
-        Ok(Rc::new(RefCell::new(MySQLConnection { conn })))
+        my::Conn::new(opts)
+            .map_err(|e| to_rdbc_err(&e))
+            .map(|conn| Rc::new(RefCell::new(MySQLConnection { conn })) as Rc<RefCell<dyn rdbc::Connection>>)
     }
 }
 
@@ -84,36 +90,21 @@ mod tests {
     use super::*;
 
     #[test]
-    fn query_direct() {
-        let url = "mysql://root:secret@127.0.0.1:3307/mysql";
-
-        let opts = my::Opts::from_url(&url).expect("DATABASE_URL invalid");
-        let mut conn = my::Conn::new(opts).unwrap();
-
-        let result = conn.query("SELECT 1").unwrap();
-
-        for row in result {
-            let row = row.unwrap();
-            let value: Option<u32> = row.get(0);
-            println!("{}", value.unwrap());
-        }
-    }
-
-    #[test]
-    fn query_via_rdbc() {
+    fn execute_query() -> rdbc::Result<()> {
         let driver = MySQLDriver::new();
 
         let conn = driver
-            .connect("mysql://root:secret@127.0.0.1:3307")
-            .unwrap();
+            .connect("mysql://root:secret@127.0.0.1:3307")?;
 
         let mut conn = conn.as_ref().borrow_mut();
 
-        let rs = conn.execute_query("SELECT 1").unwrap();
+        let rs = conn.execute_query("SELECT 1")?;
         let mut rs = rs.borrow_mut();
 
         while rs.next() {
             println!("{:?}", rs.get_i32(1))
         }
+
+        Ok(())
     }
 }

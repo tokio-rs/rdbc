@@ -70,7 +70,7 @@ struct PResultSet {
 impl rdbc::ResultSet for PResultSet {
 
     fn next(&mut self) -> bool {
-        if self.i + 1 < self.rows.len() {
+        if self.i < self.rows.len() {
             self.i = self.i + 1;
             true
         } else {
@@ -79,11 +79,11 @@ impl rdbc::ResultSet for PResultSet {
     }
 
     fn get_i32(&self, i: usize) -> Option<i32> {
-        self.rows.get(self.i).get(i)
+        self.rows.get(self.i-1).get(i-1)
     }
 
     fn get_string(&self, i: usize) -> Option<String> {
-        self.rows.get(self.i).get(i)
+        self.rows.get(self.i-1).get(i-1)
     }
 }
 

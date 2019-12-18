@@ -32,6 +32,7 @@ fn connect_postgres() -> Rc<RefCell<dyn Connection>> {
 }
 
 fn execute(conn: Rc<RefCell<dyn Connection>>, sql: &str) {
+    println!("Execute {}", sql);
 
     let mut conn = conn.borrow_mut();
     let rs = conn.execute_query(sql).unwrap();

@@ -32,7 +32,7 @@ impl MySQLDriver {
         MySQLDriver {}
     }
 
-    pub fn connect(&self, url: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection + '_>>> {
+    pub fn connect(&self, url: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection + 'static>>> {
         let opts = my::Opts::from_url(&url).expect("DATABASE_URL invalid");
         let conn = my::Conn::new(opts).unwrap();
         Ok(Rc::new(RefCell::new(MySQLConnection { conn })))

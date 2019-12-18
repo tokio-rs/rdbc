@@ -48,14 +48,17 @@ pub struct MySQLConnection {
 
 impl rdbc::Connection for MySQLConnection {
     fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
-        let result = self.conn.query(sql).unwrap();
-        Ok(Rc::new(RefCell::new(MySQLResultSet { result, row: None })))
+        self.conn.query(sql)
+            .map_err(|e| to_rdbc_err(&e))
+            .map(|result| Rc::new(RefCell::new(MySQLResultSet { result, row: None })) as Rc<RefCell<dyn rdbc::ResultSet>>)
     }
 
     fn execute_update(&mut self, sql: &str) -> rdbc::Result<usize> {
-        let result = self.conn.query(sql).unwrap();
-        Ok(result.affected_rows() as usize)
+        self.conn.query(sql)
+            .map_err(|e| to_rdbc_err(&e))
+            .map(|result| result.affected_rows() as usize)
     }
+
 }
 
 pub struct MySQLResultSet<'a> {

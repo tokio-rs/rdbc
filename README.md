@@ -78,6 +78,6 @@ while rs.next() {
 
 # Building
 
-Use `docker-compose` to start up Postgres and MySQL containers to test against.
+Use `docker-compose up -d` to start up Postgres and MySQL containers to test against.
 
 Use `cargo test` to run the unit tests.

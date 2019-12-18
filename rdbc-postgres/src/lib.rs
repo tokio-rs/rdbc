@@ -41,7 +41,9 @@ impl PostgresDriver {
     pub fn connect(&self, url: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection>>> {
         postgres::Connection::connect(url, TlsMode::None)
             .map_err(|e| to_rdbc_err(&e))
-            .map(|c| Ok(Rc::new(RefCell::new(PConnection::new(c))) as Rc<RefCell<dyn rdbc::Connection>>))?
+            .map(|c| {
+                Ok(Rc::new(RefCell::new(PConnection::new(c))) as Rc<RefCell<dyn rdbc::Connection>>)
+            })?
     }
 }
 
@@ -59,13 +61,17 @@ impl PConnection {
 
 impl rdbc::Connection for PConnection {
     fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn ResultSet + '_>>> {
-        self.conn.query(sql, &[])
+        self.conn
+            .query(sql, &[])
             .map_err(|e| to_rdbc_err(&e))
-            .map(|rows| Rc::new(RefCell::new(PResultSet { i: 0, rows })) as Rc<RefCell<dyn ResultSet>>)
+            .map(|rows| {
+                Rc::new(RefCell::new(PResultSet { i: 0, rows })) as Rc<RefCell<dyn ResultSet>>
+            })
     }
 
     fn execute_update(&mut self, sql: &str) -> rdbc::Result<usize> {
-        self.conn.execute(sql, &[])
+        self.conn
+            .execute(sql, &[])
             .map_err(|e| to_rdbc_err(&e))
             .map(|n| n as usize)
     }

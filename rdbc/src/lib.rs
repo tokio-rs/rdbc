@@ -23,7 +23,7 @@ use std::rc::Rc;
 /// RDBC Error
 #[derive(Debug)]
 pub enum Error {
-    General(String)
+    General(String),
 }
 
 /// RDBC Result type

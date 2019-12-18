@@ -38,7 +38,9 @@ impl MySQLDriver {
         let opts = my::Opts::from_url(&url).expect("DATABASE_URL invalid");
         my::Conn::new(opts)
             .map_err(|e| to_rdbc_err(&e))
-            .map(|conn| Rc::new(RefCell::new(MySQLConnection { conn })) as Rc<RefCell<dyn rdbc::Connection>>)
+            .map(|conn| {
+                Rc::new(RefCell::new(MySQLConnection { conn })) as Rc<RefCell<dyn rdbc::Connection>>
+            })
     }
 }
 
@@ -48,17 +50,21 @@ pub struct MySQLConnection {
 
 impl rdbc::Connection for MySQLConnection {
     fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
-        self.conn.query(sql)
+        self.conn
+            .query(sql)
             .map_err(|e| to_rdbc_err(&e))
-            .map(|result| Rc::new(RefCell::new(MySQLResultSet { result, row: None })) as Rc<RefCell<dyn rdbc::ResultSet>>)
+            .map(|result| {
+                Rc::new(RefCell::new(MySQLResultSet { result, row: None }))
+                    as Rc<RefCell<dyn rdbc::ResultSet>>
+            })
     }
 
     fn execute_update(&mut self, sql: &str) -> rdbc::Result<usize> {
-        self.conn.query(sql)
+        self.conn
+            .query(sql)
             .map_err(|e| to_rdbc_err(&e))
             .map(|result| result.affected_rows() as usize)
     }
-
 }
 
 pub struct MySQLResultSet<'a> {
@@ -96,8 +102,7 @@ mod tests {
     fn execute_query() -> rdbc::Result<()> {
         let driver = MySQLDriver::new();
 
-        let conn = driver
-            .connect("mysql://root:secret@127.0.0.1:3307")?;
+        let conn = driver.connect("mysql://root:secret@127.0.0.1:3307")?;
 
         let mut conn = conn.as_ref().borrow_mut();
 

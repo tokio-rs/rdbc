@@ -59,8 +59,9 @@ impl PConnection {
 
 impl rdbc::Connection for PConnection {
     fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn ResultSet + '_>>> {
-        let rows: Rows = self.conn.query(sql, &[]).unwrap();
-        Ok(Rc::new(RefCell::new(PResultSet { i: 0, rows })))
+        self.conn.query(sql, &[])
+            .map_err(|e| to_rdbc_err(&e))
+            .map(|rows| Rc::new(RefCell::new(PResultSet { i: 0, rows })) as Rc<RefCell<dyn ResultSet>>)
     }
 
     fn execute_update(&mut self, sql: &str) -> rdbc::Result<usize> {
@@ -98,14 +99,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn it_works() {
+    fn it_works() -> rdbc::Result<()> {
         let driver = PostgresDriver::new();
-        let conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433");
+        let conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433")?;
         let mut conn = conn.as_ref().borrow_mut();
         let rs = conn.execute_query("SELECT 1").unwrap();
         let mut rs = rs.as_ref().borrow_mut();
         while rs.next() {
             println!("{:?}", rs.get_i32(1))
         }
+        Ok(())
     }
 }

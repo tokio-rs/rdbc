@@ -22,12 +22,9 @@ use std::rc::Rc;
 use mysql as my;
 use rdbc;
 
-pub struct MySQLDriver {
-
-}
+pub struct MySQLDriver {}
 
 impl MySQLDriver {
-
     pub fn new() -> Self {
         MySQLDriver {}
     }
@@ -44,7 +41,6 @@ pub struct MySQLConnection {
 }
 
 impl rdbc::Connection for MySQLConnection {
-
     fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
         let result = self.conn.query(sql).unwrap();
         Ok(Rc::new(RefCell::new(MySQLResultSet { result, row: None })))
@@ -57,11 +53,10 @@ impl rdbc::Connection for MySQLConnection {
 
 pub struct MySQLResultSet<'a> {
     result: my::QueryResult<'a>,
-    row: Option<my::Result<my::Row>>
+    row: Option<my::Result<my::Row>>,
 }
 
 impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
-
     fn next(&mut self) -> bool {
         self.row = self.result.next();
         self.row.is_some()
@@ -69,15 +64,15 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
 
     fn get_i32(&self, i: usize) -> Option<i32> {
         match &self.row {
-            Some(Ok(row)) => row.get(i-1),
-            _ => None
+            Some(Ok(row)) => row.get(i - 1),
+            _ => None,
         }
     }
 
     fn get_string(&self, i: usize) -> Option<String> {
         match &self.row {
-            Some(Ok(row)) => row.get(i-1),
-            _ => None
+            Some(Ok(row)) => row.get(i - 1),
+            _ => None,
         }
     }
 }
@@ -89,7 +84,6 @@ mod tests {
 
     #[test]
     fn query_direct() {
-
         let url = "mysql://root:secret@127.0.0.1:3307/mysql";
 
         let opts = my::Opts::from_url(&url).expect("DATABASE_URL invalid");
@@ -106,7 +100,6 @@ mod tests {
 
     #[test]
     fn query_via_rdbc() {
-
         let driver = MySQLDriver::new();
 
         let conn = driver

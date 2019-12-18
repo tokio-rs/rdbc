@@ -51,7 +51,6 @@ impl PConnection {
 }
 
 impl rdbc::Connection for PConnection {
-
     fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn ResultSet + '_>>> {
         let rows: Rows = self.conn.query(sql, &[]).unwrap();
         Ok(Rc::new(RefCell::new(PResultSet { i: 0, rows })))
@@ -68,7 +67,6 @@ struct PResultSet {
 }
 
 impl rdbc::ResultSet for PResultSet {
-
     fn next(&mut self) -> bool {
         if self.i < self.rows.len() {
             self.i = self.i + 1;
@@ -79,11 +77,11 @@ impl rdbc::ResultSet for PResultSet {
     }
 
     fn get_i32(&self, i: usize) -> Option<i32> {
-        self.rows.get(self.i-1).get(i-1)
+        self.rows.get(self.i - 1).get(i - 1)
     }
 
     fn get_string(&self, i: usize) -> Option<String> {
-        self.rows.get(self.i-1).get(i-1)
+        self.rows.get(self.i - 1).get(i - 1)
     }
 }
 

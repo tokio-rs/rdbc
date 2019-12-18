@@ -8,6 +8,6 @@ license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
-rdbc = { path = "../rdbc" }
-#rdbc = "0.1.2"
+#rdbc = { path = "../rdbc" }
+rdbc = "0.1.2"
 mysql = "17.0.0"

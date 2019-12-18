@@ -1,10 +1,14 @@
 [package]
 name = "rdbc-cli"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Andy Grove <andygrove73@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-rdbc = { path = "../rdbc" }
-rdbc-mysql = { path = "../rdbc-mysql" }
-rdbc-postgres = { path = "../rdbc-postgres" }
+#rdbc = { path = "../rdbc" }
+#rdbc-mysql = { path = "../rdbc-mysql" }
+#rdbc-postgres = { path = "../rdbc-postgres" }
+
+rdbc = "0.1.2"
+rdbc-mysql = "0.1.2"
+rdbc-postgres = "0.1.2"

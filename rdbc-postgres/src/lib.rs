@@ -91,7 +91,6 @@ impl rdbc::ResultSet for PResultSet {
 mod tests {
 
     use super::*;
-    use std::borrow::BorrowMut;
 
     #[test]
     fn it_works() {

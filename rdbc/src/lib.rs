@@ -26,7 +26,7 @@ pub type Result<T> = std::result::Result<T, String>;
 /// Represents a connection to a database
 pub trait Connection {
     /// Execute a query that is expected to return a result set, such as a `SELECT` statement
-    fn execute_query(&mut self, sql: &str) -> Result<Rc<RefCell<dyn ResultSet>>>;
+    fn execute_query(&mut self, sql: &str) -> Result<Rc<RefCell<dyn ResultSet + '_>>>;
     /// Execute a query that is expected to update some rows.
     fn execute_update(&mut self, sql: &str) -> Result<usize>;
 }

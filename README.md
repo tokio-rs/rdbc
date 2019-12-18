@@ -15,9 +15,9 @@ Note that the provided RDBC drivers are just wrappers around the existing `postg
 
 This is filling a different need. I love the [Diesel](https://diesel.rs/) approach for building applications but if you are building a generic SQL tool, a business intelligence tool, or a distributed query engine, there is a need to connect to different databases and execute arbitrary SQL. This is where we need a standard API and available drivers.
 
-# Connection Trait
+# RDBC API
 
-Currently there are just two simple traits representing `Connection` and `ResultSet`. Later, there will be a `Driver` trait as well. 
+Currently there are just two simple traits representing `Connection` and `ResultSet`. Later, there will be a `Driver` trait as well as traits for retrieving database and result set meta-data.
 
 Note that the design is currently purposely not idiomatic Rust and is modelled after ODBC and JDBC. These traits can be wrapped by idiomatic Rust code and there will be features added to RDBC to facilitate that.
 
@@ -48,7 +48,7 @@ pub trait ResultSet {
 ## Create a Postgres Connection
 
 ```rust
-fn connect_postgres() -> Rc<RefCell<dyn Connection>> {
+fn connect_postgres() -> Result<Rc<RefCell<dyn Connection>>> {
     let driver = PostgresDriver::new();
     driver.connect("postgres://rdbc:secret@127.0.0.1:5433")
 }
@@ -57,23 +57,20 @@ fn connect_postgres() -> Rc<RefCell<dyn Connection>> {
 ## Create a MySQL Connection
 
 ```rust
-fn connect_mysql() -> Rc<RefCell<dyn Connection>> {
+fn connect_mysql() -> Result<Rc<RefCell<dyn Connection>>> {
     let driver = MySQLDriver::new();
-    driver.connect("mysql://root:secret@127.0.0.1:3307").unwrap()
+    driver.connect("mysql://root:secret@127.0.0.1:3307")
 }
 ```
 
 ## Execute a Query
 
 ```rust
-fn execute(conn: Rc<RefCell<dyn Connection>>, sql: &str) {
-    println!("Execute {}", sql);
-    let mut conn = conn.borrow_mut();
-    let rs = conn.execute_query(sql).unwrap();
-    let mut rs = rs.borrow_mut();
-    while rs.next() {
-        println!("{:?}", rs.get_i32(1))
-    }
+let mut conn = conn.borrow_mut();
+let rs = conn.execute_query("SELECT 1")?;
+let mut rs = rs.borrow_mut();
+while rs.next() {
+    println!("{:?}", rs.get_i32(1))
 }
 ```
 

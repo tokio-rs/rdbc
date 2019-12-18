@@ -19,7 +19,7 @@ This is filling a different need. I love the [Diesel](https://diesel.rs/) approa
 
 Currently there are just two simple traits representing `Connection` and `ResultSet`. Later, there will be a `Driver` trait as well as traits for retrieving database and result set meta-data.
 
-Note that the design is currently purposely not idiomatic Rust and is modelled after ODBC and JDBC. These traits can be wrapped by idiomatic Rust code and there will be features added to RDBC to facilitate that.
+Note that the design is currently purposely not idiomatic Rust and is modeled after ODBC and JDBC (including those annoying 1-based indices for looking up values). These traits can be wrapped by idiomatic Rust code and there will be features added to RDBC to facilitate that.
 
 ```rust
 /// Represents a connection to a database

@@ -17,7 +17,9 @@ This is filling a different need. I love the [Diesel](https://diesel.rs/) approa
 
 # Connection Trait
 
-Currently there is a simple `Connection` trait that allows queries to be executed that either return a `ResultSet` for reads or just the number of rows affected by writes. Later, there will be a `Driver` trait as well. 
+Currently there are just two simple traits representing `Connection` and `ResultSet`. Later, there will be a `Driver` trait as well. 
+
+Note that the design is currently purposely not idiomatic Rust and is modelled after ODBC and JDBC. These traits can be wrapped by idiomatic Rust code and there will be features added to RDBC to facilitate that.
 
 ```rust
 /// Represents a connection to a database
@@ -26,6 +28,18 @@ pub trait Connection {
     fn execute_query(&mut self, sql: &str) -> Result<Rc<RefCell<dyn ResultSet + '_>>>;
     /// Execute a query that is expected to update some rows.
     fn execute_update(&mut self, sql: &str) -> Result<usize>;
+}
+
+/// Result set from executing a query against a statement
+pub trait ResultSet {
+    /// Move the cursor to the next available row if one exists and return true if it does
+    fn next(&mut self) -> bool;
+    /// Get the i32 value at column `i` (1-based)
+    fn get_i32(&self, i: usize) -> Option<i32>;
+    /// Get the String value at column `i` (1-based)
+    fn get_string(&self, i: usize) -> Option<String>;
+    
+    /* other accessors omitted */
 }
 ```
 

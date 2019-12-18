@@ -21,9 +21,15 @@ use rdbc;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use postgres;
 use postgres::rows::Rows;
 use postgres::{Connection, TlsMode};
 use rdbc::ResultSet;
+
+/// Convert a Postgres error into an RDBC error
+fn to_rdbc_err(e: &postgres::error::Error) -> rdbc::Error {
+    rdbc::Error::General(format!("{:?}", e))
+}
 
 pub struct PostgresDriver {}
 
@@ -32,9 +38,10 @@ impl PostgresDriver {
         PostgresDriver {}
     }
 
-    pub fn connect(&self, url: &str) -> Rc<RefCell<dyn rdbc::Connection>> {
-        let conn = postgres::Connection::connect(url, TlsMode::None).unwrap();
-        Rc::new(RefCell::new(PConnection::new(conn)))
+    pub fn connect(&self, url: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection>>> {
+        postgres::Connection::connect(url, TlsMode::None)
+            .map_err(|e| to_rdbc_err(&e))
+            .map(|c| Ok(Rc::new(RefCell::new(PConnection::new(c))) as Rc<RefCell<dyn rdbc::Connection>>))?
     }
 }
 

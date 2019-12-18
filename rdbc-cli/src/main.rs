@@ -15,16 +15,14 @@ fn main() {
     execute(conn, "SELECT 1");
 }
 
-fn connect_mysql() -> Rc<RefCell<dyn Connection>> {
+fn connect_mysql() -> Rc<RefCell<dyn Connection + 'static>> {
     let driver = MySQLDriver::new();
-    driver
-        .connect("mysql://root:secret@127.0.0.1:3307")
-        .unwrap()
+    driver.connect("mysql://root:secret@127.0.0.1:3307").unwrap()
 }
 
 fn connect_postgres() -> Rc<RefCell<dyn Connection>> {
     let driver = PostgresDriver::new();
-    driver.connect("postgres://rdbc:secret@127.0.0.1:5433")
+    driver.connect("postgres://rdbc:secret@127.0.0.1:5433").unwrap()
 }
 
 fn execute(conn: Rc<RefCell<dyn Connection>>, sql: &str) {

@@ -66,6 +66,8 @@ fn connect_mysql() -> Result<Rc<RefCell<dyn Connection>>> {
 ## Execute a Query
 
 ```rust
+let conn = connect_postgres()?;
+//let conn = connect_mysql()?;
 let mut conn = conn.borrow_mut();
 let rs = conn.execute_query("SELECT 1")?;
 let mut rs = rs.borrow_mut();

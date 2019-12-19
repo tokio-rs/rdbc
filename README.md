@@ -17,17 +17,23 @@ This is filling a different need. I love the [Diesel](https://diesel.rs/) approa
 
 # RDBC API
 
-Currently there are just two simple traits representing `Connection` and `ResultSet`. Later, there will be a `Driver` trait as well as traits for retrieving database and result set meta-data.
+Currently there are traits representing `Connection`, `Statement`, and `ResultSet`. Later, there will be a `Driver` trait as well as traits for retrieving database and result set meta-data.
 
 Note that the design is currently purposely not idiomatic Rust and is modeled after ODBC and JDBC (including those annoying 1-based indices for looking up values). These traits can be wrapped by idiomatic Rust code and there will be features added to RDBC to facilitate that.
 
 ```rust
 /// Represents a connection to a database
 pub trait Connection {
+    /// Prepare a SQL statement for execution
+    fn prepare(&mut self, sql: &str) -> Result<Rc<RefCell<dyn Statement + '_>>>;
+}
+
+pub trait Statement {
     /// Execute a query that is expected to return a result set, such as a `SELECT` statement
-    fn execute_query(&mut self, sql: &str) -> Result<Rc<RefCell<dyn ResultSet + '_>>>;
+    fn execute_query(&mut self, params: &Vec<Value>) -> Result<Rc<RefCell<dyn ResultSet + '_>>>;
+
     /// Execute a query that is expected to update some rows.
-    fn execute_update(&mut self, sql: &str) -> Result<usize>;
+    fn execute_update(&mut self, params: &Vec<Value>) -> Result<usize>;
 }
 
 /// Result set from executing a query against a statement
@@ -38,8 +44,7 @@ pub trait ResultSet {
     fn get_i32(&self, i: usize) -> Option<i32>;
     /// Get the String value at column `i` (1-based)
     fn get_string(&self, i: usize) -> Option<String>;
-    
-    /* other accessors omitted */
+    //TODO add accessors for all data types
 }
 ```
 
@@ -68,9 +73,15 @@ fn connect_mysql() -> Result<Rc<RefCell<dyn Connection>>> {
 ```rust
 let conn = connect_postgres()?;
 //let conn = connect_mysql()?;
-let mut conn = conn.borrow_mut();
-let rs = conn.execute_query("SELECT 1")?;
+let mut conn = conn.as_ref().borrow_mut();
+
+let stmt = conn.prepare("SELECT ?")?;
+let mut stmt = stmt.borrow_mut();
+
+let params = vec![rdbc::Value::Int32(1)];
+let rs = stmt.execute_query(&params)?;
 let mut rs = rs.borrow_mut();
+
 while rs.next() {
     println!("{:?}", rs.get_i32(1))
 }

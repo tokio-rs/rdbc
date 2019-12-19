@@ -44,14 +44,28 @@ impl MySQLDriver {
     }
 }
 
-pub struct MySQLConnection {
+struct MySQLConnection {
     conn: my::Conn,
 }
 
 impl rdbc::Connection for MySQLConnection {
-    fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
-        self.conn
-            .query(sql)
+    fn prepare(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
+        let stmt = self.conn.prepare(&sql).unwrap();
+        Ok(Rc::new(RefCell::new(MySQLStatement { stmt })) as Rc<RefCell<dyn rdbc::Statement>>)
+    }
+}
+
+struct MySQLStatement<'a> {
+    stmt: my::Stmt<'a>,
+}
+
+impl<'a> rdbc::Statement for MySQLStatement<'a> {
+    fn execute_query(
+        &mut self,
+        params: &Vec<rdbc::Value>,
+    ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
+        self.stmt
+            .execute(to_my_params(params))
             .map_err(|e| to_rdbc_err(&e))
             .map(|result| {
                 Rc::new(RefCell::new(MySQLResultSet { result, row: None }))
@@ -59,9 +73,9 @@ impl rdbc::Connection for MySQLConnection {
             })
     }
 
-    fn execute_update(&mut self, sql: &str) -> rdbc::Result<usize> {
-        self.conn
-            .query(sql)
+    fn execute_update(&mut self, params: &Vec<rdbc::Value>) -> rdbc::Result<usize> {
+        self.stmt
+            .execute(to_my_params(params))
             .map_err(|e| to_rdbc_err(&e))
             .map(|result| result.affected_rows() as usize)
     }
@@ -93,6 +107,19 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
     }
 }
 
+fn to_my_value(v: &rdbc::Value) -> my::Value {
+    match v {
+        rdbc::Value::Int32(n) => my::Value::Int(*n as i64),
+        rdbc::Value::UInt32(n) => my::Value::Int(*n as i64),
+        rdbc::Value::String(s) => my::Value::from(s),
+    }
+}
+
+/// Convert RDBC parameters to MySQL parameters
+fn to_my_params(params: &Vec<rdbc::Value>) -> my::Params {
+    my::Params::Positional(params.iter().map(|v| to_my_value(v)).collect())
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -106,12 +133,18 @@ mod tests {
 
         let mut conn = conn.as_ref().borrow_mut();
 
-        let rs = conn.execute_query("SELECT 1")?;
+        let stmt = conn.prepare("SELECT ?")?;
+        let mut stmt = stmt.borrow_mut();
+
+        let params = vec![rdbc::Value::Int32(1)];
+
+        let rs = stmt.execute_query(&params)?;
+
         let mut rs = rs.borrow_mut();
 
-        while rs.next() {
-            println!("{:?}", rs.get_i32(1))
-        }
+        assert!(rs.next());
+        assert_eq!(Some(1), rs.get_i32(1));
+        assert!(!rs.next());
 
         Ok(())
     }

@@ -7,10 +7,10 @@ license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
-#rdbc = { path = "../rdbc" }
-#rdbc-mysql = { path = "../rdbc-mysql" }
-#rdbc-postgres = { path = "../rdbc-postgres" }
+rdbc = { path = "../rdbc" }
+rdbc-mysql = { path = "../rdbc-mysql" }
+rdbc-postgres = { path = "../rdbc-postgres" }
 
-rdbc = "0.1.2"
-rdbc-mysql = "0.1.2"
-rdbc-postgres = "0.1.2"
+#rdbc = "0.1.2"
+#rdbc-mysql = "0.1.2"
+#rdbc-postgres = "0.1.2"

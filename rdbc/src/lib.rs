@@ -18,7 +18,6 @@
 //! ```
 
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 
 /// RDBC Error
@@ -40,7 +39,7 @@ impl ToString for Value {
         match self {
             Value::Int32(n) => format!("{}", n),
             Value::UInt32(n) => format!("{}", n),
-            Value::String(s) => s.clone(),
+            Value::String(s) => format!("'{}'", s),
         }
     }
 }
@@ -56,13 +55,10 @@ pub trait Connection {
 
 pub trait Statement {
     /// Execute a query that is expected to return a result set, such as a `SELECT` statement
-    fn execute_query(
-        &mut self,
-        params: &HashMap<String, Value>,
-    ) -> Result<Rc<RefCell<dyn ResultSet + '_>>>;
+    fn execute_query(&mut self, params: &Vec<Value>) -> Result<Rc<RefCell<dyn ResultSet + '_>>>;
 
     /// Execute a query that is expected to update some rows.
-    fn execute_update(&mut self, params: &HashMap<String, Value>) -> Result<usize>;
+    fn execute_update(&mut self, params: &Vec<Value>) -> Result<usize>;
 }
 
 /// Result set from executing a query against a statement
@@ -76,14 +72,15 @@ pub trait ResultSet {
     //TODO add accessors for all data types
 }
 
-/// Simplistic code to replace named parameters in a query
-pub fn replace_params(sql: &str, params: &HashMap<String, Value>) -> String {
+/// Simplistic code to replace named parameters in a query .. note that this is far from complete
+/// and does not prevent SQL injection attacks so that is the callers responsibility for now
+pub fn replace_params(sql: &str, params: &Vec<Value>) -> String {
     let mut sql = sql.to_owned();
-    params.iter().for_each(|(k, v)| {
-        let param_name = format!(":{}", k);
-        let param_value = v.to_string();
+    for i in 0..params.len() {
+        let param_name = format!("${}", i + 1);
+        let param_value = params[i].to_string();
         sql = sql.replace(&param_name, &param_value);
-    });
+    }
     sql
 }
 
@@ -93,12 +90,10 @@ mod tests {
 
     #[test]
     fn test_add() {
-        let sql = "INSERT foo (id, name) VALUES (:id, :name)";
-        let mut params = HashMap::new();
-        params.insert("id".to_owned(), Value::Int32(123));
-        params.insert("name".to_owned(), Value::String("Bob".to_owned()));
+        let sql = "INSERT foo (id, name) VALUES ($1, $2)";
+        let params = vec![Value::Int32(123), Value::String("Bob".to_owned())];
         assert_eq!(
-            "INSERT foo (id, name) VALUES (123, Bob)".to_owned(),
+            "INSERT foo (id, name) VALUES (123, 'Bob')".to_owned(),
             replace_params(&sql, &params)
         );
     }

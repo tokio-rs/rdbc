@@ -25,7 +25,7 @@ use std::rc::Rc;
 use postgres;
 use postgres::rows::Rows;
 use postgres::{Connection, TlsMode};
-use rdbc::ResultSet;
+use rdbc::{ResultSet, Statement, Error};
 
 /// Convert a Postgres error into an RDBC error
 fn to_rdbc_err(e: &postgres::error::Error) -> rdbc::Error {
@@ -61,10 +61,19 @@ impl PConnection {
 }
 
 impl rdbc::Connection for PConnection {
+    fn prepare(&mut self, sql: &str) -> Result<Rc<RefCell<Statement>>, Error> {
+        unimplemented!()
+    }
+}
+
+struct PStatement {
+}
+
+impl rdbc::Statement for PStatement {}
+
     fn execute_query(
         &mut self,
-        sql: &str,
-        _params: HashMap<String, rdbc::Value>,
+        &params: HashMap<String, rdbc::Value>,
     ) -> rdbc::Result<Rc<RefCell<dyn ResultSet + '_>>> {
         self.conn
             .query(sql, &[])
@@ -76,8 +85,7 @@ impl rdbc::Connection for PConnection {
 
     fn execute_update(
         &mut self,
-        sql: &str,
-        _params: HashMap<String, rdbc::Value>,
+        &params: HashMap<String, rdbc::Value>,
     ) -> rdbc::Result<usize> {
         self.conn
             .execute(sql, &[])

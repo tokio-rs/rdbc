@@ -17,13 +17,10 @@
 //! ```
 
 use std::cell::RefCell;
-use std::collections::HashMap;
-use std::hash::BuildHasherDefault;
 use std::rc::Rc;
 
 use mysql as my;
 use rdbc;
-use twox_hash::XxHash64;
 
 /// Convert a MySQL error into an RDBC error
 fn to_rdbc_err(e: &my::error::Error) -> rdbc::Error {
@@ -54,26 +51,21 @@ struct MySQLConnection {
 impl rdbc::Connection for MySQLConnection {
     fn prepare(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
         let stmt = self.conn.prepare(&sql).unwrap();
-        Ok(Rc::new(RefCell::new(MySQLStatement {
-            stmt,
-            sql: sql.to_owned(),
-        })) as Rc<RefCell<dyn rdbc::Statement>>)
+        Ok(Rc::new(RefCell::new(MySQLStatement { stmt })) as Rc<RefCell<dyn rdbc::Statement>>)
     }
 }
 
 struct MySQLStatement<'a> {
     stmt: my::Stmt<'a>,
-    sql: String,
 }
 
 impl<'a> rdbc::Statement for MySQLStatement<'a> {
     fn execute_query(
         &mut self,
-        params: &HashMap<String, rdbc::Value>,
+        params: &Vec<rdbc::Value>,
     ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
-        let mysql_params = to_my_params(params);
         self.stmt
-            .execute(my::Params::Named(mysql_params))
+            .execute(to_my_params(params))
             .map_err(|e| to_rdbc_err(&e))
             .map(|result| {
                 Rc::new(RefCell::new(MySQLResultSet { result, row: None }))
@@ -81,10 +73,9 @@ impl<'a> rdbc::Statement for MySQLStatement<'a> {
             })
     }
 
-    fn execute_update(&mut self, params: &HashMap<String, rdbc::Value>) -> rdbc::Result<usize> {
-        let mysql_params = to_my_params(params);
+    fn execute_update(&mut self, params: &Vec<rdbc::Value>) -> rdbc::Result<usize> {
         self.stmt
-            .execute(my::Params::Named(mysql_params))
+            .execute(to_my_params(params))
             .map_err(|e| to_rdbc_err(&e))
             .map(|result| result.affected_rows() as usize)
     }
@@ -124,17 +115,9 @@ fn to_my_value(v: &rdbc::Value) -> my::Value {
     }
 }
 
-type MyBuildHasher = BuildHasherDefault<XxHash64>;
-
 /// Convert RDBC parameters to MySQL parameters
-fn to_my_params(
-    params: &HashMap<String, rdbc::Value>,
-) -> HashMap<String, my::Value, MyBuildHasher> {
-    let mut mysql_params = HashMap::<String, my::Value, MyBuildHasher>::default();
-    params.iter().for_each(|(k, v)| {
-        mysql_params.insert(k.clone(), to_my_value(v));
-    });
-    mysql_params
+fn to_my_params(params: &Vec<rdbc::Value>) -> my::Params {
+    my::Params::Positional(params.iter().map(|v| to_my_value(v)).collect())
 }
 
 #[cfg(test)]
@@ -150,11 +133,10 @@ mod tests {
 
         let mut conn = conn.as_ref().borrow_mut();
 
-        let stmt = conn.prepare("SELECT :number")?;
+        let stmt = conn.prepare("SELECT ?")?;
         let mut stmt = stmt.borrow_mut();
 
-        let mut params = HashMap::default();
-        params.insert("number".to_owned(), rdbc::Value::Int32(1));
+        let params = vec![rdbc::Value::Int32(1)];
 
         let rs = stmt.execute_query(&params)?;
 

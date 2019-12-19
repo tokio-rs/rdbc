@@ -17,14 +17,11 @@
 //! ```
 
 use std::cell::RefCell;
-use std::hash::BuildHasherDefault;
 use std::collections::HashMap;
+use std::hash::BuildHasherDefault;
 use std::rc::Rc;
-use std::ptr::hash;
 
 use mysql as my;
-use mysql::Params;
-
 use rdbc;
 use twox_hash::XxHash64;
 
@@ -50,26 +47,33 @@ impl MySQLDriver {
     }
 }
 
-pub struct MySQLConnection {
+struct MySQLConnection {
     conn: my::Conn,
 }
 
 impl rdbc::Connection for MySQLConnection {
+    fn prepare(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
+        let stmt = self.conn.prepare(&sql).unwrap();
+        Ok(Rc::new(RefCell::new(MySQLStatement {
+            stmt,
+            sql: sql.to_owned(),
+        })) as Rc<RefCell<dyn rdbc::Statement>>)
+    }
+}
+
+struct MySQLStatement<'a> {
+    stmt: my::Stmt<'a>,
+    sql: String,
+}
+
+impl<'a> rdbc::Statement for MySQLStatement<'a> {
     fn execute_query(
         &mut self,
-        sql: &str,
-        params: HashMap<String, rdbc::Value>,
+        params: &HashMap<String, rdbc::Value>,
     ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
-
-        type MyBuildHasher = BuildHasherDefault<XxHash64>;
-        let mut mysql_params = HashMap::<String, my::Value, MyBuildHasher>::default();
-        params.iter().for_each(|(k,v)| {
-            mysql_params.insert(k.clone(), to_my_value(v));
-        });
-
-        let mut stmt = self.conn.prepare(sql).unwrap();
-
-        stmt.execute(Params::Named(mysql_params))
+        let mysql_params = to_my_params(params);
+        self.stmt
+            .execute(my::Params::Named(mysql_params))
             .map_err(|e| to_rdbc_err(&e))
             .map(|result| {
                 Rc::new(RefCell::new(MySQLResultSet { result, row: None }))
@@ -77,13 +81,10 @@ impl rdbc::Connection for MySQLConnection {
             })
     }
 
-    fn execute_update(
-        &mut self,
-        sql: &str,
-        _params: HashMap<String, rdbc::Value>,
-    ) -> rdbc::Result<usize> {
-        self.conn
-            .query(sql)
+    fn execute_update(&mut self, params: &HashMap<String, rdbc::Value>) -> rdbc::Result<usize> {
+        let mysql_params = to_my_params(params);
+        self.stmt
+            .execute(my::Params::Named(mysql_params))
             .map_err(|e| to_rdbc_err(&e))
             .map(|result| result.affected_rows() as usize)
     }
@@ -115,9 +116,25 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
     }
 }
 
-fn to_my_value(_v: &rdbc::Value) -> my::Value {
-    //TODO
-    my::Value::Int(123)
+fn to_my_value(v: &rdbc::Value) -> my::Value {
+    match v {
+        rdbc::Value::Int32(n) => my::Value::Int(*n as i64),
+        rdbc::Value::UInt32(n) => my::Value::Int(*n as i64),
+        rdbc::Value::String(s) => my::Value::from(s),
+    }
+}
+
+type MyBuildHasher = BuildHasherDefault<XxHash64>;
+
+/// Convert RDBC parameters to MySQL parameters
+fn to_my_params(
+    params: &HashMap<String, rdbc::Value>,
+) -> HashMap<String, my::Value, MyBuildHasher> {
+    let mut mysql_params = HashMap::<String, my::Value, MyBuildHasher>::default();
+    params.iter().for_each(|(k, v)| {
+        mysql_params.insert(k.clone(), to_my_value(v));
+    });
+    mysql_params
 }
 
 #[cfg(test)]
@@ -133,12 +150,19 @@ mod tests {
 
         let mut conn = conn.as_ref().borrow_mut();
 
-        let rs = conn.execute_query("SELECT 1", HashMap::new())?;
+        let stmt = conn.prepare("SELECT :number")?;
+        let mut stmt = stmt.borrow_mut();
+
+        let mut params = HashMap::default();
+        params.insert("number".to_owned(), rdbc::Value::Int32(1));
+
+        let rs = stmt.execute_query(&params)?;
+
         let mut rs = rs.borrow_mut();
 
-        while rs.next() {
-            println!("{:?}", rs.get_i32(1))
-        }
+        assert!(rs.next());
+        assert_eq!(Some(1), rs.get_i32(1));
+        assert!(!rs.next());
 
         Ok(())
     }

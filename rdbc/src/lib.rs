@@ -50,14 +50,19 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Represents a connection to a database
 pub trait Connection {
+    /// Prepare a SQL statement for execution
+    fn prepare(&mut self, sql: &str) -> Result<Rc<RefCell<dyn Statement + '_>>>;
+}
+
+pub trait Statement {
     /// Execute a query that is expected to return a result set, such as a `SELECT` statement
     fn execute_query(
         &mut self,
-        sql: &str,
-        params: HashMap<String, Value>,
+        params: &HashMap<String, Value>,
     ) -> Result<Rc<RefCell<dyn ResultSet + '_>>>;
+
     /// Execute a query that is expected to update some rows.
-    fn execute_update(&mut self, sql: &str, params: HashMap<String, Value>) -> Result<usize>;
+    fn execute_update(&mut self, params: &HashMap<String, Value>) -> Result<usize>;
 }
 
 /// Result set from executing a query against a statement

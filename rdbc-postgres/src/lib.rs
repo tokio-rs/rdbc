@@ -23,9 +23,9 @@ use postgres;
 use postgres::rows::Rows;
 use postgres::{Connection, TlsMode};
 
+use postgres::types::{IsNull, Type};
 use rdbc;
 use rdbc::{ResultSet, Statement};
-use postgres::types::{Type, IsNull};
 use std::error::Error;
 
 /// Convert a Postgres error into an RDBC error
@@ -124,34 +124,49 @@ impl rdbc::ResultSet for PResultSet {
 
 #[derive(Debug)]
 struct PostgresValue {
-  value: rdbc::Value
+    value: rdbc::Value,
 }
 
 impl PostgresValue {
     fn from(value: &rdbc::Value) -> Self {
-        Self { value: value.clone() }
+        Self {
+            value: value.clone(),
+        }
     }
 }
 
 impl postgres::types::ToSql for PostgresValue {
-
-    fn to_sql(&self, ty: &Type, out: &mut Vec<u8>) -> Result<IsNull, Box<dyn Error + Sync + Send>> where
-        Self: Sized {
+    fn to_sql(&self, ty: &Type, out: &mut Vec<u8>) -> Result<IsNull, Box<dyn Error + Sync + Send>>
+    where
+        Self: Sized,
+    {
+        //TODO implement
         unimplemented!()
     }
 
-    fn accepts(ty: &Type) -> bool where
-        Self: Sized {
+    fn accepts(ty: &Type) -> bool
+    where
+        Self: Sized,
+    {
+        //TODO implement
         unimplemented!()
     }
 
-    fn to_sql_checked(&self, ty: &Type, out: &mut Vec<u8>) -> Result<IsNull, Box<dyn Error + Sync + Send>> {
+    fn to_sql_checked(
+        &self,
+        ty: &Type,
+        out: &mut Vec<u8>,
+    ) -> Result<IsNull, Box<dyn Error + Sync + Send>> {
+        //TODO implement
         unimplemented!()
     }
 }
 
 fn to_postgres_value(values: &Vec<rdbc::Value>) -> Vec<Box<dyn postgres::types::ToSql>> {
-    values.iter().map(|v| Box::new(PostgresValue::from(v)) as Box<dyn postgres::types::ToSql>).collect()
+    values
+        .iter()
+        .map(|v| Box::new(PostgresValue::from(v)) as Box<dyn postgres::types::ToSql>)
+        .collect()
 }
 
 #[cfg(test)]
@@ -164,10 +179,13 @@ mod tests {
         let driver = PostgresDriver::new();
         let conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433")?;
         let mut conn = conn.as_ref().borrow_mut();
-        let stmt = conn.prepare("SELECT $1")?;
+        let stmt = conn.prepare("SELECT 1")?;
         let mut stmt = stmt.borrow_mut();
-        let params = vec![rdbc::Value::Int32(1)];
+        let params = vec![/*rdbc::Value::Int32(1)*/];
         let rs = stmt.execute_query(&params)?;
+
+
+
         let mut rs = rs.as_ref().borrow_mut();
 
         assert!(rs.next());

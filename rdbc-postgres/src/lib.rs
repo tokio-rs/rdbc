@@ -16,16 +16,15 @@
 //! }
 //! ```
 
-use rdbc;
-
 use std::cell::RefCell;
-use std::collections::HashMap;
 use std::rc::Rc;
 
 use postgres;
 use postgres::rows::Rows;
 use postgres::{Connection, TlsMode};
-use rdbc::{ResultSet, Statement, Error};
+
+use rdbc;
+use rdbc::{ResultSet, Statement};
 
 /// Convert a Postgres error into an RDBC error
 fn to_rdbc_err(e: &postgres::error::Error) -> rdbc::Error {
@@ -49,46 +48,45 @@ impl PostgresDriver {
 }
 
 struct PConnection {
-    conn: Rc<Connection>,
+    conn: Connection,
 }
 
 impl PConnection {
     pub fn new(conn: Connection) -> Self {
-        Self {
-            conn: Rc::new(conn),
-        }
+        Self { conn }
     }
 }
 
 impl rdbc::Connection for PConnection {
-    fn prepare(&mut self, sql: &str) -> Result<Rc<RefCell<Statement>>, Error> {
-        unimplemented!()
+    fn prepare(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
+        Ok(Rc::new(RefCell::new(PStatement {
+            conn: &self.conn,
+            sql: sql.to_owned(),
+        })) as Rc<RefCell<dyn rdbc::Statement>>)
     }
 }
 
-struct PStatement {
+struct PStatement<'a> {
+    conn: &'a Connection,
+    sql: String,
 }
 
-impl rdbc::Statement for PStatement {}
-
+impl<'a> rdbc::Statement for PStatement<'a> {
     fn execute_query(
         &mut self,
-        &params: HashMap<String, rdbc::Value>,
-    ) -> rdbc::Result<Rc<RefCell<dyn ResultSet + '_>>> {
+        params: &Vec<rdbc::Value>,
+    ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
         self.conn
-            .query(sql, &[])
+            .query(&self.sql, &[])
             .map_err(|e| to_rdbc_err(&e))
             .map(|rows| {
                 Rc::new(RefCell::new(PResultSet { i: 0, rows })) as Rc<RefCell<dyn ResultSet>>
             })
     }
 
-    fn execute_update(
-        &mut self,
-        &params: HashMap<String, rdbc::Value>,
-    ) -> rdbc::Result<usize> {
+    fn execute_update(&mut self, params: &Vec<rdbc::Value>) -> rdbc::Result<usize> {
         self.conn
-            .execute(sql, &[])
+            .execute(&self.sql, &[])
             .map_err(|e| to_rdbc_err(&e))
             .map(|n| n as usize)
     }
@@ -128,11 +126,16 @@ mod tests {
         let driver = PostgresDriver::new();
         let conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433")?;
         let mut conn = conn.as_ref().borrow_mut();
-        let rs = conn.execute_query("SELECT 1", HashMap::new())?;
+        let stmt = conn.prepare("SELECT 1")?;
+        let mut stmt = stmt.borrow_mut();
+        let params = vec![rdbc::Value::Int32(1)];
+        let rs = stmt.execute_query(&params)?;
         let mut rs = rs.as_ref().borrow_mut();
-        while rs.next() {
-            println!("{:?}", rs.get_i32(1))
-        }
+
+        assert!(rs.next());
+        assert_eq!(Some(1), rs.get_i32(1));
+        assert!(!rs.next());
+
         Ok(())
     }
 }

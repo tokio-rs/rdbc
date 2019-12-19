@@ -25,6 +25,8 @@ use postgres::{Connection, TlsMode};
 
 use rdbc;
 use rdbc::{ResultSet, Statement};
+use postgres::types::{Type, IsNull};
+use std::error::Error;
 
 /// Convert a Postgres error into an RDBC error
 fn to_rdbc_err(e: &postgres::error::Error) -> rdbc::Error {
@@ -76,8 +78,10 @@ impl<'a> rdbc::Statement for PStatement<'a> {
         &mut self,
         params: &Vec<rdbc::Value>,
     ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
+        let params = to_postgres_value(params);
+        let params: Vec<&dyn postgres::types::ToSql> = params.iter().map(|v| v.as_ref()).collect();
         self.conn
-            .query(&self.sql, &[])
+            .query(&self.sql, params.as_slice())
             .map_err(|e| to_rdbc_err(&e))
             .map(|rows| {
                 Rc::new(RefCell::new(PResultSet { i: 0, rows })) as Rc<RefCell<dyn ResultSet>>
@@ -85,8 +89,10 @@ impl<'a> rdbc::Statement for PStatement<'a> {
     }
 
     fn execute_update(&mut self, params: &Vec<rdbc::Value>) -> rdbc::Result<usize> {
+        let params = to_postgres_value(params);
+        let params: Vec<&dyn postgres::types::ToSql> = params.iter().map(|v| v.as_ref()).collect();
         self.conn
-            .execute(&self.sql, &[])
+            .execute(&self.sql, params.as_slice())
             .map_err(|e| to_rdbc_err(&e))
             .map(|n| n as usize)
     }
@@ -116,6 +122,38 @@ impl rdbc::ResultSet for PResultSet {
     }
 }
 
+#[derive(Debug)]
+struct PostgresValue {
+  value: rdbc::Value
+}
+
+impl PostgresValue {
+    fn from(value: &rdbc::Value) -> Self {
+        Self { value: value.clone() }
+    }
+}
+
+impl postgres::types::ToSql for PostgresValue {
+
+    fn to_sql(&self, ty: &Type, out: &mut Vec<u8>) -> Result<IsNull, Box<dyn Error + Sync + Send>> where
+        Self: Sized {
+        unimplemented!()
+    }
+
+    fn accepts(ty: &Type) -> bool where
+        Self: Sized {
+        unimplemented!()
+    }
+
+    fn to_sql_checked(&self, ty: &Type, out: &mut Vec<u8>) -> Result<IsNull, Box<dyn Error + Sync + Send>> {
+        unimplemented!()
+    }
+}
+
+fn to_postgres_value(values: &Vec<rdbc::Value>) -> Vec<Box<dyn postgres::types::ToSql>> {
+    values.iter().map(|v| Box::new(PostgresValue::from(v)) as Box<dyn postgres::types::ToSql>).collect()
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -126,7 +164,7 @@ mod tests {
         let driver = PostgresDriver::new();
         let conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433")?;
         let mut conn = conn.as_ref().borrow_mut();
-        let stmt = conn.prepare("SELECT 1")?;
+        let stmt = conn.prepare("SELECT $1")?;
         let mut stmt = stmt.borrow_mut();
         let params = vec![rdbc::Value::Int32(1)];
         let rs = stmt.execute_query(&params)?;

@@ -26,7 +26,7 @@ pub enum Error {
     General(String),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Value {
     Int32(i32),
     UInt32(u32),

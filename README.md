@@ -76,6 +76,16 @@ while rs.next() {
 }
 ```
 
+# Current Status
+
+This is just an experimental PoC and is not currently suitable for anything. However, I do intend to make it useful pretty quickly and I am tracking issues [here](https://github.com/andygrove/rdbc/issues).
+
+The immediate priorities though are:
+
+- [x] Announce project and get initial feedback
+- [ ] Support parameterized queries (both positional and named parameters)
+- [ ] Implement unit and integration tests
+
 # Building
 
 Use `docker-compose up -d` to start up Postgres and MySQL containers to test against.

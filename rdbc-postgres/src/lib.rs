@@ -19,6 +19,7 @@
 use rdbc;
 
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 use postgres;
@@ -60,7 +61,11 @@ impl PConnection {
 }
 
 impl rdbc::Connection for PConnection {
-    fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn ResultSet + '_>>> {
+    fn execute_query(
+        &mut self,
+        sql: &str,
+        _params: HashMap<String, rdbc::Value>,
+    ) -> rdbc::Result<Rc<RefCell<dyn ResultSet + '_>>> {
         self.conn
             .query(sql, &[])
             .map_err(|e| to_rdbc_err(&e))
@@ -69,7 +74,11 @@ impl rdbc::Connection for PConnection {
             })
     }
 
-    fn execute_update(&mut self, sql: &str) -> rdbc::Result<usize> {
+    fn execute_update(
+        &mut self,
+        sql: &str,
+        _params: HashMap<String, rdbc::Value>,
+    ) -> rdbc::Result<usize> {
         self.conn
             .execute(sql, &[])
             .map_err(|e| to_rdbc_err(&e))
@@ -111,7 +120,7 @@ mod tests {
         let driver = PostgresDriver::new();
         let conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433")?;
         let mut conn = conn.as_ref().borrow_mut();
-        let rs = conn.execute_query("SELECT 1")?;
+        let rs = conn.execute_query("SELECT 1", HashMap::new())?;
         let mut rs = rs.as_ref().borrow_mut();
         while rs.next() {
             println!("{:?}", rs.get_i32(1))

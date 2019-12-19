@@ -4,6 +4,7 @@ use std::rc::Rc;
 use rdbc::{Connection, Result};
 use rdbc_mysql::MySQLDriver;
 use rdbc_postgres::PostgresDriver;
+use std::collections::HashMap;
 
 //TODO: turn this into a CLI ... for now, just demonstrate that the same code can be used
 // with Postgres and MySQL
@@ -30,7 +31,7 @@ fn connect_postgres() -> Result<Rc<RefCell<dyn Connection>>> {
 fn execute(conn: Rc<RefCell<dyn Connection>>, sql: &str) -> Result<()> {
     println!("Executing {}", sql);
     let mut conn = conn.borrow_mut();
-    let rs = conn.execute_query(sql)?;
+    let rs = conn.execute_query(sql, HashMap::new())?;
     let mut rs = rs.borrow_mut();
     while rs.next() {
         println!("{:?}", rs.get_i32(1))

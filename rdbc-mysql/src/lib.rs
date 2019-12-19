@@ -21,6 +21,7 @@ use std::rc::Rc;
 
 use mysql as my;
 use rdbc;
+use std::collections::HashMap;
 
 /// Convert a MySQL error into an RDBC error
 fn to_rdbc_err(e: &my::error::Error) -> rdbc::Error {
@@ -49,7 +50,11 @@ pub struct MySQLConnection {
 }
 
 impl rdbc::Connection for MySQLConnection {
-    fn execute_query(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
+    fn execute_query(
+        &mut self,
+        sql: &str,
+        _params: HashMap<String, rdbc::Value>,
+    ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
         self.conn
             .query(sql)
             .map_err(|e| to_rdbc_err(&e))
@@ -59,7 +64,11 @@ impl rdbc::Connection for MySQLConnection {
             })
     }
 
-    fn execute_update(&mut self, sql: &str) -> rdbc::Result<usize> {
+    fn execute_update(
+        &mut self,
+        sql: &str,
+        _params: HashMap<String, rdbc::Value>,
+    ) -> rdbc::Result<usize> {
         self.conn
             .query(sql)
             .map_err(|e| to_rdbc_err(&e))
@@ -106,7 +115,7 @@ mod tests {
 
         let mut conn = conn.as_ref().borrow_mut();
 
-        let rs = conn.execute_query("SELECT 1")?;
+        let rs = conn.execute_query("SELECT 1", HashMap::new())?;
         let mut rs = rs.borrow_mut();
 
         while rs.next() {

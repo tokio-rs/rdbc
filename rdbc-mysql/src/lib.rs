@@ -17,11 +17,16 @@
 //! ```
 
 use std::cell::RefCell;
+use std::hash::BuildHasherDefault;
+use std::collections::HashMap;
 use std::rc::Rc;
+use std::ptr::hash;
 
 use mysql as my;
+use mysql::Params;
+
 use rdbc;
-use std::collections::HashMap;
+use twox_hash::XxHash64;
 
 /// Convert a MySQL error into an RDBC error
 fn to_rdbc_err(e: &my::error::Error) -> rdbc::Error {
@@ -53,10 +58,18 @@ impl rdbc::Connection for MySQLConnection {
     fn execute_query(
         &mut self,
         sql: &str,
-        _params: HashMap<String, rdbc::Value>,
+        params: HashMap<String, rdbc::Value>,
     ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
-        self.conn
-            .query(sql)
+
+        type MyBuildHasher = BuildHasherDefault<XxHash64>;
+        let mut mysql_params = HashMap::<String, my::Value, MyBuildHasher>::default();
+        params.iter().for_each(|(k,v)| {
+            mysql_params.insert(k.clone(), to_my_value(v));
+        });
+
+        let mut stmt = self.conn.prepare(sql).unwrap();
+
+        stmt.execute(Params::Named(mysql_params))
             .map_err(|e| to_rdbc_err(&e))
             .map(|result| {
                 Rc::new(RefCell::new(MySQLResultSet { result, row: None }))
@@ -100,6 +113,11 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
             _ => None,
         }
     }
+}
+
+fn to_my_value(_v: &rdbc::Value) -> my::Value {
+    //TODO
+    my::Value::Int(123)
 }
 
 #[cfg(test)]

@@ -25,7 +25,6 @@ use postgres::{Connection, TlsMode};
 
 use postgres::types::{IsNull, Type};
 use rdbc;
-use rdbc::{ResultSet, Statement};
 use std::error::Error;
 
 /// Convert a Postgres error into an RDBC error
@@ -84,7 +83,7 @@ impl<'a> rdbc::Statement for PStatement<'a> {
             .query(&self.sql, params.as_slice())
             .map_err(|e| to_rdbc_err(&e))
             .map(|rows| {
-                Rc::new(RefCell::new(PResultSet { i: 0, rows })) as Rc<RefCell<dyn ResultSet>>
+                Rc::new(RefCell::new(PResultSet { i: 0, rows })) as Rc<RefCell<dyn rdbc::ResultSet>>
             })
     }
 
@@ -183,8 +182,6 @@ mod tests {
         let mut stmt = stmt.borrow_mut();
         let params = vec![/*rdbc::Value::Int32(1)*/];
         let rs = stmt.execute_query(&params)?;
-
-
 
         let mut rs = rs.as_ref().borrow_mut();
 

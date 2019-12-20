@@ -2,32 +2,40 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use odbc;
+use odbc::odbc_safe::{AutocommitMode, Version, Odbc3};
+use odbc::Environment;
+
 use rdbc;
 use rdbc::{Error, ResultSet, Statement, Value};
 
-struct OdbcDriver {}
+struct OdbcDriver {
+    env: Environment<Odbc3>
+}
 
 impl OdbcDriver {
-    pub fn new() -> Self {
-        OdbcDriver {}
-    }
 
-    pub fn connect(&self, connect_string: &str) -> Rc<RefCell<dyn rdbc::Connection + '_>> {
+    pub fn new() -> Self {
+
         let env = odbc::create_environment_v3()
             .map_err(|e| e.unwrap())
             .unwrap();
-        let conn = env.connect_with_connection_string(connect_string).unwrap();
-        unimplemented!()
-        //Rc::new(RefCell::new(OdbcConnection { conn }))
+
+        OdbcDriver { env }
+    }
+
+    pub fn connect(&self, connect_string: &str) -> Rc<RefCell<dyn rdbc::Connection + '_>> {
+        let conn = self.env.connect_with_connection_string(connect_string).unwrap();
+        Rc::new(RefCell::new(OdbcConnection { conn }))
     }
 }
 
-struct OdbcConnection {
-    //    conn: odbc::Connection
+struct OdbcConnection<'a, V> where V: AutocommitMode {
+    conn: odbc::Connection<'a, V>
 }
 
-impl rdbc::Connection for OdbcConnection {
+impl<'a, V> rdbc::Connection for OdbcConnection<'a, V> where V: AutocommitMode {
     fn prepare(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
+        let stmt = odbc::Statement::with_parent(&self.conn).unwrap();
         unimplemented!()
     }
 }
@@ -63,19 +71,6 @@ impl rdbc::ResultSet for OdbcResultSet {
     }
 }
 
-//
-//fn connect() -> std::result::Result<(), DiagnosticRecord> {
-//
-//    let env = create_environment_v3().map_err(|e| e.unwrap())?;
-//
-//    let mut buffer = String::new();
-//    println!("Please enter connection string: ");
-//    io::stdin().read_line(&mut buffer).unwrap();
-//
-//    let conn = env.connect_with_connection_string(&buffer)?;
-//    execute_statement(&conn)
-//}
-//
 //fn execute_statement<'env>(conn: &Connection<'env>) -> Result<()> {
 //    let stmt = Statement::with_parent(conn)?;
 //

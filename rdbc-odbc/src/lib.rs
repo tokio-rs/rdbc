@@ -3,10 +3,11 @@ use std::rc::Rc;
 
 use odbc;
 use odbc::odbc_safe::{AutocommitMode, Version, Odbc3};
-use odbc::Environment;
+use odbc::{Environment, HasResult, Allocated, NoResult};
 
 use rdbc;
 use rdbc::{Error, ResultSet, Statement, Value};
+use odbc::ResultSetState::{NoData, Data};
 
 struct OdbcDriver {
     env: Environment<Odbc3>
@@ -36,17 +37,43 @@ struct OdbcConnection<'a, V> where V: AutocommitMode {
 impl<'a, V> rdbc::Connection for OdbcConnection<'a, V> where V: AutocommitMode {
     fn prepare(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
         let stmt = odbc::Statement::with_parent(&self.conn).unwrap();
-        unimplemented!()
+        Ok(Rc::new(RefCell::new(OdbcStatement { stmt, sql: sql.to_owned() })) as Rc<RefCell<dyn rdbc::Statement>>)
     }
 }
 
-struct OdbcStatement {}
+struct OdbcStatement<'con, 'b, S, R, AC> where AC: AutocommitMode {
+    stmt: odbc::Statement<'con, 'b, S, R, AC>,
+    sql: String
+}
 
-impl rdbc::Statement for OdbcStatement {
+impl<'con, 'b, S, AC> rdbc::Statement for OdbcStatement<'con, 'b, S, HasResult, AC> where AC: AutocommitMode {
+
     fn execute_query(
         &mut self,
         params: &Vec<Value>,
     ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
+        unimplemented!()
+    }
+
+    fn execute_update(&mut self, params: &Vec<Value>) -> rdbc::Result<usize> {
+        unimplemented!()
+    }
+}
+
+impl<'con, 'b, AC> rdbc::Statement for OdbcStatement<'con, 'b, Allocated, NoResult, AC> where AC: AutocommitMode {
+
+    fn execute_query(
+        &mut self,
+        params: &Vec<Value>,
+    ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
+
+//        match &self.stmt.exec_direct(&self.sql).unwrap() {
+//            Data(stmt) => {
+//                //Ok(Rc::new(RefCell::new(OdbcStatement { stmt, sql: sql.to_owned() })) as Rc<RefCell<dyn rdbc::Statement>>)
+//                unimplemented!()
+//            },
+//            NoData(_) => unimplemented!()
+//        }
         unimplemented!()
     }
 

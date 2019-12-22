@@ -70,13 +70,13 @@ pub trait Statement {
 /// Result set from executing a query against a statement
 pub trait ResultSet {
     // get meta data about this result set
-    fn meta_data(&self) -> Result<Rc<dyn ResultSetMetaData + '_>>;
+    fn meta_data(&self) -> Result<Rc<dyn ResultSetMetaData>>;
     /// Move the cursor to the next available row if one exists and return true if it does
     fn next(&mut self) -> bool;
     /// Get the i32 value at column `i` (1-based)
-    fn get_i32(&self, i: usize) -> Option<i32>;
+    fn get_i32(&self, i: u64) -> Option<i32>;
     /// Get the String value at column `i` (1-based)
-    fn get_string(&self, i: usize) -> Option<String>;
+    fn get_string(&self, i: u64) -> Option<String>;
 
     //TODO add accessors for all data types
 }
@@ -84,8 +84,8 @@ pub trait ResultSet {
 /// Meta data for result set
 pub trait ResultSetMetaData {
     fn num_columns(&self) -> u64;
-    fn column_name(&self, i: usize) -> String;
-    fn column_type(&self, i: usize) -> DataType;
+    fn column_name(&self, i: u64) -> String;
+    fn column_type(&self, i: u64) -> DataType;
 }
 
 /// RDBC Data Types
@@ -125,11 +125,11 @@ impl ResultSetMetaData for Vec<Column> {
         self.len() as u64
     }
 
-    fn column_name(&self, i: usize) -> String {
-        self[i].name.clone()
+    fn column_name(&self, i: u64) -> String {
+        self[i as usize - 1].name.clone()
     }
 
-    fn column_type(&self, i: usize) -> DataType {
-        self[i].data_type
+    fn column_type(&self, i: u64) -> DataType {
+        self[i as usize - 1].data_type
     }
 }

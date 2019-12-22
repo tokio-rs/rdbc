@@ -153,12 +153,12 @@ impl rdbc::ResultSet for PResultSet {
         }
     }
 
-    fn get_i32(&self, i: usize) -> Option<i32> {
-        self.rows.get(self.i - 1).get(i - 1)
+    fn get_i32(&self, i: u64) -> Option<i32> {
+        self.rows.get(self.i - 1).get(i as usize - 1)
     }
 
-    fn get_string(&self, i: usize) -> Option<String> {
-        self.rows.get(self.i - 1).get(i - 1)
+    fn get_string(&self, i: u64) -> Option<String> {
+        self.rows.get(self.i - 1).get(i as usize - 1)
     }
 }
 
@@ -170,6 +170,7 @@ fn to_rdbc_err(e: &postgres::error::Error) -> rdbc::Error {
 fn to_rdbc_type(ty: &Type) -> rdbc::DataType {
     match ty.name() {
         "" => rdbc::DataType::Bool,
+        //TODO all types
         _ => rdbc::DataType::Varchar,
     }
 }
@@ -181,6 +182,7 @@ fn to_postgres_value(values: &Vec<rdbc::Value>) -> Vec<Box<dyn postgres::types::
             rdbc::Value::String(s) => Box::new(s.clone()) as Box<dyn postgres::types::ToSql>,
             rdbc::Value::Int32(n) => Box::new(*n) as Box<dyn postgres::types::ToSql>,
             rdbc::Value::UInt32(n) => Box::new(*n) as Box<dyn postgres::types::ToSql>,
+            //TODO all types
         })
         .collect()
 }

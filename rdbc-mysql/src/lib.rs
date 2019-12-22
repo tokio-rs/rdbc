@@ -23,6 +23,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use mysql as my;
+use mysql_common::constants::ColumnType;
 
 use rdbc;
 
@@ -132,7 +133,13 @@ pub struct MySQLResultSet<'a> {
 
 impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
     fn meta_data(&self) -> rdbc::Result<Rc<dyn rdbc::ResultSetMetaData>> {
-        unimplemented!()
+        let meta: Vec<rdbc::Column> = self
+            .result
+            .columns_ref()
+            .iter()
+            .map(|c| rdbc::Column::new(&c.name_str(), to_rdbc_type(&c.column_type())))
+            .collect();
+        Ok(Rc::new(meta))
     }
 
     fn next(&mut self) -> bool {
@@ -140,18 +147,27 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
         self.row.is_some()
     }
 
-    fn get_i32(&self, i: usize) -> Option<i32> {
+    fn get_i32(&self, i: u64) -> Option<i32> {
         match &self.row {
-            Some(Ok(row)) => row.get(i - 1),
+            Some(Ok(row)) => row.get(i as usize - 1),
             _ => None,
         }
     }
 
-    fn get_string(&self, i: usize) -> Option<String> {
+    fn get_string(&self, i: u64) -> Option<String> {
         match &self.row {
-            Some(Ok(row)) => row.get(i - 1),
+            Some(Ok(row)) => row.get(i as usize - 1),
             _ => None,
         }
+    }
+}
+
+fn to_rdbc_type(t: &ColumnType) -> rdbc::DataType {
+    match t {
+        ColumnType::MYSQL_TYPE_FLOAT => rdbc::DataType::Float,
+        ColumnType::MYSQL_TYPE_DOUBLE => rdbc::DataType::Double,
+        //TODO all types
+        _ => rdbc::DataType::Varchar,
     }
 }
 
@@ -160,6 +176,7 @@ fn to_my_value(v: &rdbc::Value) -> my::Value {
         rdbc::Value::Int32(n) => my::Value::Int(*n as i64),
         rdbc::Value::UInt32(n) => my::Value::Int(*n as i64),
         rdbc::Value::String(s) => my::Value::from(s),
+        //TODO all types
     }
 }
 

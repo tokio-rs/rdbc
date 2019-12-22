@@ -34,8 +34,24 @@ fn execute(conn: Rc<RefCell<dyn Connection>>, sql: &str) -> Result<()> {
     let mut stmt = stmt.borrow_mut();
     let rs = stmt.execute_query(&vec![])?;
     let mut rs = rs.borrow_mut();
-    while rs.next() {
-        println!("{:?}", rs.get_i32(1))
+    let meta = rs.meta_data().unwrap();
+
+    for i in 0..meta.num_columns() {
+        print!("{}\t", meta.column_name(i + 1));
     }
+    println!();
+
+    while rs.next() {
+        for i in 0..meta.num_columns() {
+            if i > 0 {
+                print!("\t")
+            }
+            match meta.column_type(i + 1) {
+                _ => print!("{:?}\t", rs.get_i32(i + 1)),
+            }
+        }
+        println!();
+    }
+
     Ok(())
 }

@@ -101,9 +101,20 @@ This is just an experimental PoC and is not currently suitable for anything. How
 The immediate priorities though are:
 
 - [x] Announce project and get initial feedback
-- [x] Support parameterized queries using positional parameters and prepared statements
-- [ ] Support parameterized queries using positional parameters and non-prepared statements
-- [ ] Implement unit and integration tests
+- [x] Support parameterized queries
+- [x] Support prepared statements
+- [ ] Implement simple SQL console CLI
+- [ ] Fix error handling (i.e. remove all the unwraps)
+- [ ] Design for async
+- [ ] Support connection pooling
+- [ ] Implement comprehensive unit and integration tests
+- [ ] Add support for all MySQL data types
+- [ ] Add support for all Postgres data types
+- [ ] Implement RDBC-ODBC bridge
+
+# License
+
+RDBC is licensed under [Apache Licence, Version 2.0](/LICENSE).
 
 # Contributing
 

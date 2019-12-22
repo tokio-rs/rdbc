@@ -7,7 +7,7 @@
 
 Love them or hate them, the [ODBC](https://en.wikipedia.org/wiki/Open_Database_Connectivity) and [JDBC](https://en.wikipedia.org/wiki/Java_Database_Connectivity) standards have made it easy to use a wide range of desktop and server products with many different databases thanks to the availability of database drivers implementing these standards.
 
-This project provides a Rust equivalent API as well as reference implementations (drivers) for Postgres, MySQL, and SQLite. 
+This project provides a Rust equivalent API as well as reference implementations (drivers) for Postgres, MySQL, and SQLite. There is also an RDBC-ODBC driver being developed, that will allow ODBC drivers to be called via the RDBC API, so that it is also possible to connect to databases that do not yet have Rust drivers available.
 
 Note that the provided RDBC drivers are just wrappers around existing database driver crates and this project is not attempting to build new drivers from scratch but rather make it possible to leverage existing drivers through a common API.
 

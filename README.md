@@ -24,27 +24,39 @@ Note that the design is currently purposely not idiomatic Rust and is modeled af
 ```rust
 /// Represents a connection to a database
 pub trait Connection {
-    /// Prepare a SQL statement for execution
+    /// Create a statement for execution
+    fn create(&mut self, sql: &str) -> Result<Rc<RefCell<dyn Statement + '_>>>;
+    /// Create a prepared statement for execution
     fn prepare(&mut self, sql: &str) -> Result<Rc<RefCell<dyn Statement + '_>>>;
 }
 
+/// Represents an executable statement
 pub trait Statement {
     /// Execute a query that is expected to return a result set, such as a `SELECT` statement
     fn execute_query(&mut self, params: &Vec<Value>) -> Result<Rc<RefCell<dyn ResultSet + '_>>>;
-
     /// Execute a query that is expected to update some rows.
-    fn execute_update(&mut self, params: &Vec<Value>) -> Result<usize>;
+    fn execute_update(&mut self, params: &Vec<Value>) -> Result<u64>;
 }
 
 /// Result set from executing a query against a statement
 pub trait ResultSet {
+    // get meta data about this result set
+    fn meta_data(&self) -> Result<Rc<dyn ResultSetMetaData + '_>>;
     /// Move the cursor to the next available row if one exists and return true if it does
     fn next(&mut self) -> bool;
     /// Get the i32 value at column `i` (1-based)
     fn get_i32(&self, i: usize) -> Option<i32>;
     /// Get the String value at column `i` (1-based)
     fn get_string(&self, i: usize) -> Option<String>;
+
     //TODO add accessors for all data types
+}
+
+/// Meta data for result set
+pub trait ResultSetMetaData {
+    fn num_columns(&self) -> u64;
+    fn column_name(&self, i: usize) -> String;
+    fn column_type(&self, i: usize) -> DataType;
 }
 ```
 

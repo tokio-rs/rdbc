@@ -25,7 +25,6 @@ use std::rc::Rc;
 use mysql as my;
 
 use rdbc;
-use rdbc::{Error, ResultSet, ResultSetMetaData, Statement, Value};
 
 use sqlparser::dialect::MySqlDialect;
 use sqlparser::tokenizer::{Token, Tokenizer, Word};
@@ -79,8 +78,8 @@ struct MySQLStatement<'a> {
 impl<'a> rdbc::Statement for MySQLStatement<'a> {
     fn execute_query(
         &mut self,
-        params: &Vec<Value>,
-    ) -> rdbc::Result<Rc<RefCell<dyn ResultSet + '_>>> {
+        params: &Vec<rdbc::Value>,
+    ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
         let sql = rewrite(&self.sql, params);
         self.conn
             .query(&sql)
@@ -91,7 +90,7 @@ impl<'a> rdbc::Statement for MySQLStatement<'a> {
             })
     }
 
-    fn execute_update(&mut self, params: &Vec<Value>) -> rdbc::Result<u64> {
+    fn execute_update(&mut self, params: &Vec<rdbc::Value>) -> rdbc::Result<u64> {
         let sql = rewrite(&self.sql, params);
         self.conn
             .query(&sql)
@@ -132,6 +131,7 @@ pub struct MySQLResultSet<'a> {
 }
 
 impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
+
     fn meta_data(&self) -> rdbc::Result<Rc<dyn rdbc::ResultSetMetaData>> {
         unimplemented!()
     }

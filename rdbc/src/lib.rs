@@ -70,13 +70,14 @@ pub trait Statement {
 /// Result set from executing a query against a statement
 pub trait ResultSet {
     // get meta data about this result set
-    fn meta_data(&self) -> Result<Rc<dyn ResultSetMetaData + 'static>>;
+    fn meta_data(&self) -> Result<Rc<dyn ResultSetMetaData + '_>>;
     /// Move the cursor to the next available row if one exists and return true if it does
     fn next(&mut self) -> bool;
     /// Get the i32 value at column `i` (1-based)
     fn get_i32(&self, i: usize) -> Option<i32>;
     /// Get the String value at column `i` (1-based)
     fn get_string(&self, i: usize) -> Option<String>;
+
     //TODO add accessors for all data types
 }
 

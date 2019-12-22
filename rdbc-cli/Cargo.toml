@@ -1,19 +1,19 @@
 [package]
 name = "rdbc-cli"
 description = "Command line tool for querying RDBC data sources"
-version = "0.1.2"
+version = "0.1.4"
 authors = ["Andy Grove <andygrove73@gmail.com>"]
 license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
-rdbc = { path = "../rdbc" }
-rdbc-mysql = { path = "../rdbc-mysql" }
-rdbc-postgres = { path = "../rdbc-postgres" }
+#rdbc = { path = "../rdbc" }
+#rdbc-mysql = { path = "../rdbc-mysql" }
+#rdbc-postgres = { path = "../rdbc-postgres" }
 
-#rdbc = "0.1.2"
-#rdbc-mysql = "0.1.2"
-#rdbc-postgres = "0.1.2"
+rdbc = "0.1.4"
+rdbc-mysql = "0.1.4"
+rdbc-postgres = "0.1.4"
 
 clap = "2.33.0"
 rustyline = "4.1.0"

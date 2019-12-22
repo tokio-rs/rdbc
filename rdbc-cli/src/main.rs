@@ -4,14 +4,14 @@ use std::rc::Rc;
 use clap::{crate_version, App, Arg};
 use rustyline::Editor;
 
-use rdbc::{Connection, Result};
+use rdbc::{Connection, Result, DataType};
 use rdbc_mysql::MySQLDriver;
 use rdbc_postgres::PostgresDriver;
 
 fn main() -> Result<()> {
     let matches = App::new("rdbc-cli")
         .version(crate_version!())
-        .about("Rust DataBase Connectivity SQL Console")
+        .about("Rust DataBase Connectivity CLI")
         .arg(
             Arg::with_name("driver")
                 .help("RDBC driver name")
@@ -80,24 +80,31 @@ fn main() -> Result<()> {
 fn execute(conn: Rc<RefCell<dyn Connection>>, sql: &str) -> Result<()> {
     println!("Executing {}", sql);
     let mut conn = conn.borrow_mut();
-    let stmt = conn.prepare(sql)?;
+    let stmt = conn.create(sql)?;
     let mut stmt = stmt.borrow_mut();
     let rs = stmt.execute_query(&vec![])?;
     let mut rs = rs.borrow_mut();
     let meta = rs.meta_data()?;
 
     for i in 0..meta.num_columns() {
-        print!("{}\t", meta.column_name(i + 1));
+        if i>0 {
+            print!("\t");
+        }
+        print!("{}", meta.column_name(i + 1));
     }
     println!();
 
     while rs.next() {
         for i in 0..meta.num_columns() {
             if i > 0 {
-                print!("\t")
+                print!("\t");
             }
-            match meta.column_type(i + 1) {
-                _ => print!("{:?}\t", rs.get_i32(i + 1)),
+            let col_index = i + 1;
+            match meta.column_type(col_index) {
+                DataType::Varchar => print!("{:?}", rs.get_string(col_index)),
+                DataType::Integer => print!("{:?}", rs.get_i32(col_index)),
+                // TODO other types
+                _ => print!("{:?}", rs.get_string(col_index)),
             }
         }
         println!();

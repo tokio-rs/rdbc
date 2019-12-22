@@ -1,15 +1,15 @@
 [package]
 name = "rdbc-mysql"
 description = " MySQL RDBC Driver"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Andy Grove <andygrove73@gmail.com>"]
 license = "Apache-2.0"
 
 edition = "2018"
 
 [dependencies]
-rdbc = { path = "../rdbc" }
-#rdbc = "0.1.3"
+#rdbc = { path = "../rdbc" }
+rdbc = "0.1.4"
 
 mysql = "17.0.0"
 mysql_common = "0.19.2"

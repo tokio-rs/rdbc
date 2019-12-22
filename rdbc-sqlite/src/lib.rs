@@ -100,7 +100,14 @@ struct SResultSet<'stmt> {
 
 impl<'stmt> rdbc::ResultSet for SResultSet<'stmt> {
     fn meta_data(&self) -> rdbc::Result<Rc<dyn rdbc::ResultSetMetaData>> {
-        unimplemented!()
+        let meta: Vec<rdbc::Column> = self
+            .rows
+            .columns()
+            .unwrap()
+            .iter()
+            .map(|c| rdbc::Column::new(c.name(), to_rdbc_type(c.decl_type())))
+            .collect();
+        Ok(Rc::new(meta))
     }
 
     fn next(&mut self) -> bool {
@@ -113,6 +120,14 @@ impl<'stmt> rdbc::ResultSet for SResultSet<'stmt> {
 
     fn get_string(&self, i: u64) -> Option<String> {
         self.rows.get().unwrap().get(i as usize - 1).ok()
+    }
+}
+
+fn to_rdbc_type(t: Option<&str>) -> rdbc::DataType {
+    //TODO implement for real
+    match t {
+        Some("INT") => rdbc::DataType::Integer,
+        _ => rdbc::DataType::Varchar,
     }
 }
 
@@ -129,7 +144,7 @@ fn to_sqlite_value(values: &[rdbc::Value]) -> Vec<Box<dyn rusqlite::types::ToSql
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rdbc::Connection;
+    use rdbc::{Connection, DataType};
 
     #[test]
     fn execute_query() -> rdbc::Result<()> {
@@ -149,6 +164,11 @@ mod tests {
         let rs = stmt.execute_query(&vec![])?;
 
         let mut rs = rs.as_ref().borrow_mut();
+
+        let meta = rs.meta_data().unwrap();
+        assert_eq!(1, meta.num_columns());
+        assert_eq!("a".to_owned(), meta.column_name(1));
+        assert_eq!(DataType::Integer, meta.column_type(1));
 
         assert!(rs.next());
         assert_eq!(Some(123), rs.get_i32(1));

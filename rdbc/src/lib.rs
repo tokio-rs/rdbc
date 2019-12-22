@@ -89,7 +89,7 @@ pub trait ResultSetMetaData {
 }
 
 /// RDBC Data Types
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum DataType {
     Varchar,
     Integer,

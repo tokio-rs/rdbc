@@ -7,9 +7,9 @@
 
 Love them or hate them, the [ODBC](https://en.wikipedia.org/wiki/Open_Database_Connectivity) and [JDBC](https://en.wikipedia.org/wiki/Java_Database_Connectivity) standards have made it easy to use a wide range of desktop and server products with many different databases thanks to the availability of database drivers implementing these standards.
 
-I believe there is a need for a Rust equivalent so I have started this experimental project and aim to provide an RDBC API and reference implementations (drivers) for both Postgres and MySQL. 
+This project provides a Rust equivalent API as well as reference implementations (drivers) for Postgres, MySQL, and SQLite. 
 
-Note that the provided RDBC drivers are just wrappers around the existing `postgres` and `mysql` crates and this project is not attempting to build new drivers from scratch but rather make it possible to leverage existing drivers through a common API.
+Note that the provided RDBC drivers are just wrappers around existing database driver crates and this project is not attempting to build new drivers from scratch but rather make it possible to leverage existing drivers through a common API.
 
 # Why do we need this when we have Diesel?
 
@@ -17,9 +17,11 @@ This is filling a different need. I love the [Diesel](https://diesel.rs/) approa
 
 # RDBC API
 
-Currently there are traits representing `Connection`, `Statement`, and `ResultSet`. Later, there will be a `Driver` trait as well as traits for retrieving database and result set meta-data.
+Currently there are traits representing `Connection`, `Statement`, `ResultSet`, and `ResultSetMetaData`. Later, there will be a `Driver` trait as well, with support for connection pooling. 
 
-Note that the design is currently purposely not idiomatic Rust and is modeled after ODBC and JDBC (including those annoying 1-based indices for looking up values). These traits can be wrapped by idiomatic Rust code and there will be features added to RDBC to facilitate that.
+There is currently no `async` support but that will likely be addressed soon.
+
+Note that the design of the RDBC API is intentionally not idiomatic Rust and is modeled directly after ODBC and JDBC (including those annoying 1-based indices for looking up values). These traits can be wrapped by idiomatic Rust code and there will be features added to RDBC to facilitate that.
 
 ```rust
 /// Represents a connection to a database
@@ -103,13 +105,14 @@ The immediate priorities though are:
 - [x] Announce project and get initial feedback
 - [x] Support parameterized queries
 - [x] Support prepared statements
-- [ ] Implement simple SQL console CLI
+- [x] Implement simple SQL console CLI
 - [ ] Fix error handling (i.e. remove all the unwraps)
 - [ ] Design for async
 - [ ] Support connection pooling
 - [ ] Implement comprehensive unit and integration tests
 - [ ] Add support for all MySQL data types
 - [ ] Add support for all Postgres data types
+- [ ] Add support for all SQLite data types
 - [ ] Implement RDBC-ODBC bridge
 
 # License

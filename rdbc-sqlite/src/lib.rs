@@ -26,7 +26,6 @@ use rdbc;
 use rusqlite::Rows;
 use fallible_streaming_iterator::FallibleStreamingIterator;
 
-
 /// Convert a Sqlite error into an RDBC error
 fn to_rdbc_err(e: &rusqlite::Error) -> rdbc::Error {
     rdbc::Error::General(format!("{:?}", e))
@@ -58,6 +57,11 @@ impl SConnection {
 }
 
 impl rdbc::Connection for SConnection {
+
+    fn create(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
+        self.prepare(sql)
+    }
+
     fn prepare(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
         let stmt = self.conn.prepare(sql).map_err(|e| to_rdbc_err(&e))?;
         Ok(Rc::new(RefCell::new(SStatement {
@@ -82,10 +86,10 @@ impl<'a> rdbc::Statement for SStatement<'a> {
 
     }
 
-    fn execute_update(&mut self, params: &Vec<rdbc::Value>) -> rdbc::Result<usize> {
+    fn execute_update(&mut self, params: &Vec<rdbc::Value>) -> rdbc::Result<u64> {
         let params = to_sqlite_value(params);
         let params: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|v| v.as_ref()).collect();
-        return self.stmt.execute(&params).map_err(|e| to_rdbc_err(&e));
+        return self.stmt.execute(&params).map_err(|e| to_rdbc_err(&e)).map(|n|n as u64);
     }
 }
 
@@ -94,16 +98,22 @@ struct SResultSet<'stmt> {
 }
 
 impl<'stmt> rdbc::ResultSet for SResultSet<'stmt> {
+
+    fn meta_data(&self) -> rdbc::Result<Rc<dyn rdbc::ResultSetMetaData>> {
+        unimplemented!()
+    }
+
+
     fn next(&mut self) -> bool {
         self.rows.next().unwrap().is_some()
     }
 
-    fn get_i32(&self, i: usize) -> Option<i32> {
-        self.rows.get().unwrap().get(i - 1).ok()
+    fn get_i32(&self, i: u64) -> Option<i32> {
+        self.rows.get().unwrap().get(i as usize - 1).ok()
     }
 
-    fn get_string(&self, i: usize) -> Option<String> {
-        self.rows.get().unwrap().get(i - 1).ok()
+    fn get_string(&self, i: u64) -> Option<String> {
+        self.rows.get().unwrap().get(i as usize - 1).ok()
     }
 }
 
@@ -147,7 +157,7 @@ mod tests {
         Ok(())
     }
 
-    fn execute(conn: &mut Rc<RefCell<dyn Connection>>, sql: &str, values: &Vec<rdbc::Value>) -> rdbc::Result<usize> {
+    fn execute(conn: &mut Rc<RefCell<dyn Connection>>, sql: &str, values: &Vec<rdbc::Value>) -> rdbc::Result<u64> {
         println!("Executing '{}' with {} params", sql, values.len());
         let mut conn = conn.as_ref().borrow_mut();
         let stmt = conn.prepare(sql)?;

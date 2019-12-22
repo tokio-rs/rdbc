@@ -105,8 +105,6 @@ The immediate priorities though are:
 - [ ] Support parameterized queries using positional parameters and non-prepared statements
 - [ ] Implement unit and integration tests
 
-# Building
+# Contributing
 
-Use `docker-compose up -d` to start up Postgres and MySQL containers to test against.
-
-Use `cargo test` to run the unit tests.
+Please refer to the [contributors guide](CONTRIBUTING.md) before contributing to this project and for information on building and testing locally.

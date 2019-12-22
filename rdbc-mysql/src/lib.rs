@@ -5,14 +5,17 @@
 //! The RDBC (Rust DataBase Connectivity) API is loosely based on the ODBC and JDBC standards.
 //!
 //! ```rust,ignore
+//! use rdbc::Value;
 //! use rdbc_mysql::MySQLDriver;
 //! let driver = MySQLDriver::new();
 //! let conn = driver.connect("mysql://root:password@localhost:3307/mysql").unwrap();
-//! let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
-//! let rs = stmt.execute_query().unwrap();
+//! let mut conn = conn.borrow_mut();
+//! let stmt = conn.prepare("SELECT a FROM b WHERE c = ?").unwrap();
+//! let mut stmt = stmt.borrow_mut();
+//! let rs = stmt.execute_query(&vec![Value::Int32(123)]).unwrap();
 //! let mut rs = rs.borrow_mut();
 //! while rs.next() {
-//!   println!("{}", rs.get_string(1));
+//!   println!("{:?}", rs.get_string(1));
 //! }
 //! ```
 

@@ -7,13 +7,17 @@
 //! The following example demonstrates how RDBC can be used to run a trivial query against Postgres.
 //!
 //! ```rust,ignore
+//! use rdbc::Value;
+//! use rdbc_postgres::PostgresDriver;
 //! let driver = PostgresDriver::new();
-//! let conn = driver.connect("postgres://postgres@localhost:5433");
-//! let stmt = conn.create_statement("SELECT foo FROM bar").unwrap();
-//! let rs = stmt.execute_query().unwrap();
+//! let conn = driver.connect("postgres://postgres:password@localhost:5433").unwrap();
+//! let mut conn = conn.borrow_mut();
+//! let stmt = conn.prepare("SELECT a FROM b WHERE c = ?").unwrap();
+//! let mut stmt = stmt.borrow_mut();
+//! let rs = stmt.execute_query(&vec![Value::Int32(123)]).unwrap();
 //! let mut rs = rs.borrow_mut();
 //! while rs.next() {
-//!   println!("{}", rs.get_string(1));
+//!   println!("{:?}", rs.get_string(1));
 //! }
 //! ```
 

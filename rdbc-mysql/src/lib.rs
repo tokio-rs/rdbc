@@ -128,22 +128,16 @@ mod tests {
     #[test]
     fn execute_query() -> rdbc::Result<()> {
         let driver = MySQLDriver::new();
-
         let conn = driver.connect("mysql://root:secret@127.0.0.1:3307")?;
-
         let mut conn = conn.as_ref().borrow_mut();
-
         let stmt = conn.prepare("SELECT ?")?;
         let mut stmt = stmt.borrow_mut();
+        let rs = stmt.execute_query(&vec![rdbc::Value::Int32(123)])?;
 
-        let params = vec![rdbc::Value::Int32(1)];
-
-        let rs = stmt.execute_query(&params)?;
-
-        let mut rs = rs.borrow_mut();
+        let mut rs = rs.as_ref().borrow_mut();
 
         assert!(rs.next());
-        assert_eq!(Some(1), rs.get_i32(1));
+        assert_eq!(Some(123), rs.get_i32(1));
         assert!(!rs.next());
 
         Ok(())

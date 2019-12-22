@@ -21,8 +21,11 @@ use std::rc::Rc;
 
 use postgres;
 use postgres::rows::Rows;
-
 use postgres::{Connection, TlsMode};
+
+use sqlparser::dialect::PostgreSqlDialect;
+use sqlparser::tokenizer::{Token, Tokenizer, Word};
+
 use rdbc;
 
 /// Convert a Postgres error into an RDBC error
@@ -58,9 +61,34 @@ impl PConnection {
 
 impl rdbc::Connection for PConnection {
     fn prepare(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
+        // translate SQL, mapping ? into $1 style bound param placeholder
+        let dialect = PostgreSqlDialect {};
+        let mut tokenizer = Tokenizer::new(&dialect, sql);
+        let tokens = tokenizer.tokenize().unwrap();
+        let mut i = 0;
+        let tokens: Vec<Token> = tokens
+            .iter()
+            .map(|t| match t {
+                Token::Char(c) if *c == '?' => {
+                    i += 1;
+                    Token::Word(Word {
+                        value: format!("${}", i),
+                        quote_style: None,
+                        keyword: "".to_owned(),
+                    })
+                }
+                _ => t.clone(),
+            })
+            .collect();
+        let sql = tokens
+            .iter()
+            .map(|t| format!("{}", t))
+            .collect::<Vec<String>>()
+            .join("");
+
         Ok(Rc::new(RefCell::new(PStatement {
             conn: &self.conn,
-            sql: sql.to_owned(),
+            sql,
         })) as Rc<RefCell<dyn rdbc::Statement>>)
     }
 }
@@ -122,12 +150,10 @@ impl rdbc::ResultSet for PResultSet {
 fn to_postgres_value(values: &Vec<rdbc::Value>) -> Vec<Box<dyn postgres::types::ToSql>> {
     values
         .iter()
-        .map(|v| {
-            match v {
-                rdbc::Value::String(s) => Box::new(s.clone()) as Box<dyn postgres::types::ToSql> ,
-                rdbc::Value::Int32(n) => Box::new(*n) as Box<dyn postgres::types::ToSql> ,
-                rdbc::Value::UInt32(n) => Box::new(*n) as Box<dyn postgres::types::ToSql> ,
-            }
+        .map(|v| match v {
+            rdbc::Value::String(s) => Box::new(s.clone()) as Box<dyn postgres::types::ToSql>,
+            rdbc::Value::Int32(n) => Box::new(*n) as Box<dyn postgres::types::ToSql>,
+            rdbc::Value::UInt32(n) => Box::new(*n) as Box<dyn postgres::types::ToSql>,
         })
         .collect()
 }
@@ -141,7 +167,10 @@ mod tests {
     fn execute_query() -> rdbc::Result<()> {
         execute("DROP TABLE IF EXISTS test", &vec![])?;
         execute("CREATE TABLE test (a INT NOT NULL)", &vec![])?;
-        execute("INSERT INTO test (a) VALUES ($1)", &vec![rdbc::Value::Int32(123)])?;
+        execute(
+            "INSERT INTO test (a) VALUES (?)",
+            &vec![rdbc::Value::Int32(123)],
+        )?;
 
         let driver = PostgresDriver::new();
         let conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433")?;
@@ -168,5 +197,4 @@ mod tests {
         let mut stmt = stmt.borrow_mut();
         stmt.execute_update(values)
     }
-
 }

@@ -1,18 +1,44 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use rustyline::Editor;
+
 use rdbc::{Connection, Result};
 use rdbc_mysql::MySQLDriver;
 use rdbc_postgres::PostgresDriver;
+
 
 //TODO: turn this into a CLI ... for now, just demonstrate that the same code can be used
 // with Postgres and MySQL
 fn main() -> Result<()> {
     let conn = connect_postgres()?;
-    execute(conn, "SELECT 1")?;
 
-    let conn = connect_mysql()?;
-    execute(conn, "SELECT 1")?;
+    let mut rl = Editor::<()>::new();
+    rl.load_history(".history").ok();
+
+    let mut query = "".to_owned();
+    loop {
+        let readline = rl.readline("> ");
+        match readline {
+            Ok(ref line) if line.trim_end().ends_with(';') => {
+                query.push_str(line.trim_end());
+                rl.add_history_entry(query.clone());
+
+                execute(conn.clone(), &query).unwrap();
+
+                query = "".to_owned();
+            }
+            Ok(ref line) => {
+                query.push_str(line);
+                query.push_str(" ");
+            }
+            Err(_) => {
+                break;
+            }
+        }
+    }
+
+    rl.save_history(".history").ok();
 
     Ok(())
 }

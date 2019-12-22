@@ -4,19 +4,19 @@
 //!
 //! The RDBC (Rust DataBase Connectivity) API is loosely based on the ODBC and JDBC standards.
 //!
-//! ```rust,ignore
+//! ```rust
 //! use rdbc::Value;
 //! use rdbc_sqlite::SqliteDriver;
 //! let driver = SqliteDriver::new();
 //! let conn = driver.connect_in_memory().unwrap();
 //! let mut conn = conn.borrow_mut();
-//! let stmt = conn.prepare("SELECT a FROM b WHERE c = ?").unwrap();
+//! let stmt = conn.prepare("CREATE TABLE test (a INT NOT NULL)").unwrap().borrow_mut().execute_update(&vec![]).unwrap();
+//! let stmt = conn.prepare("INSERT INTO test (a) VALUES (?)").unwrap().borrow_mut().execute_update(&vec![rdbc::Value::Int32(123)]).unwrap();
+//! let stmt = conn.prepare("SELECT a FROM test").unwrap();
 //! let mut stmt = stmt.borrow_mut();
-//! let rs = stmt.execute_query(&vec![Value::Int32(123)]).unwrap();
-//! let mut rs = rs.borrow_mut();
-//! while rs.next() {
-//!   println!("{:?}", rs.get_string(1));
-//! }
+//! let rs = stmt.execute_query(&vec![]).unwrap();
+//! assert!(rs.as_ref().borrow_mut().next());
+//! assert_eq!(Some(123), rs.as_ref().borrow_mut().get_i32(1));
 //! ```
 
 use std::cell::RefCell;

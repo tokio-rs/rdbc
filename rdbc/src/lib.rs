@@ -53,20 +53,24 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Represents a connection to a database
 pub trait Connection {
-    /// Prepare a SQL statement for execution
+    /// Create a statement for execution
+    fn create(&mut self, sql: &str) -> Result<Rc<RefCell<dyn Statement + '_>>>;
+    /// Create a prepared statement for execution
     fn prepare(&mut self, sql: &str) -> Result<Rc<RefCell<dyn Statement + '_>>>;
 }
 
+/// Represents an executable statement
 pub trait Statement {
     /// Execute a query that is expected to return a result set, such as a `SELECT` statement
     fn execute_query(&mut self, params: &Vec<Value>) -> Result<Rc<RefCell<dyn ResultSet + '_>>>;
-
     /// Execute a query that is expected to update some rows.
-    fn execute_update(&mut self, params: &Vec<Value>) -> Result<usize>;
+    fn execute_update(&mut self, params: &Vec<Value>) -> Result<u64>;
 }
 
 /// Result set from executing a query against a statement
 pub trait ResultSet {
+    // get meta data about this result set
+    fn meta_data(&self) -> Result<Rc<dyn ResultSetMetaData + 'static>>;
     /// Move the cursor to the next available row if one exists and return true if it does
     fn next(&mut self) -> bool;
     /// Get the i32 value at column `i` (1-based)
@@ -76,29 +80,26 @@ pub trait ResultSet {
     //TODO add accessors for all data types
 }
 
-/// Simplistic code to replace named parameters in a query .. note that this is far from complete
-/// and does not prevent SQL injection attacks so that is the callers responsibility for now
-pub fn replace_params(sql: &str, params: &Vec<Value>) -> String {
-    let mut sql = sql.to_owned();
-    for i in 0..params.len() {
-        let param_name = format!("${}", i + 1);
-        let param_value = params[i].to_string();
-        sql = sql.replace(&param_name, &param_value);
-    }
-    sql
+/// Meta data for result set
+pub trait ResultSetMetaData {
+    fn num_columns(&self) -> u64;
+    fn column_name(&self, i: usize) -> String;
+    fn column_type(&self, i: usize) -> DataType;
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_add() {
-        let sql = "INSERT foo (id, name) VALUES ($1, $2)";
-        let params = vec![Value::Int32(123), Value::String("Bob".to_owned())];
-        assert_eq!(
-            "INSERT foo (id, name) VALUES (123, 'Bob')".to_owned(),
-            replace_params(&sql, &params)
-        );
-    }
+/// RDBC Data Types
+#[derive(Debug, Copy, Clone)]
+pub enum DataType {
+    Varchar(u64),
+    Integer,
+    Float,
+    Double,
+    Bool,
+    Date,
+    Time,
+    Datetime,
+    Decimal,
+    Blob,
+    Clob,
+    //TODO: add more types and research ODBC and JDBC types
 }

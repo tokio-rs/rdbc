@@ -31,11 +31,6 @@ use sqlparser::tokenizer::{Token, Tokenizer, Word};
 
 use rdbc;
 
-/// Convert a Postgres error into an RDBC error
-fn to_rdbc_err(e: &postgres::error::Error) -> rdbc::Error {
-    rdbc::Error::General(format!("{:?}", e))
-}
-
 pub struct PostgresDriver {}
 
 impl PostgresDriver {
@@ -63,6 +58,10 @@ impl PConnection {
 }
 
 impl rdbc::Connection for PConnection {
+    fn create(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
+        self.prepare(sql)
+    }
+
     fn prepare(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
         // translate SQL, mapping ? into $1 style bound param placeholder
         let dialect = PostgreSqlDialect {};
@@ -116,13 +115,12 @@ impl<'a> rdbc::Statement for PStatement<'a> {
             })
     }
 
-    fn execute_update(&mut self, params: &Vec<rdbc::Value>) -> rdbc::Result<usize> {
+    fn execute_update(&mut self, params: &Vec<rdbc::Value>) -> rdbc::Result<u64> {
         let params = to_postgres_value(params);
         let params: Vec<&dyn postgres::types::ToSql> = params.iter().map(|v| v.as_ref()).collect();
         self.conn
             .execute(&self.sql, params.as_slice())
             .map_err(|e| to_rdbc_err(&e))
-            .map(|n| n as usize)
     }
 }
 
@@ -132,6 +130,10 @@ struct PResultSet {
 }
 
 impl rdbc::ResultSet for PResultSet {
+    fn meta_data(&self) -> rdbc::Result<Rc<dyn rdbc::ResultSetMetaData>> {
+        unimplemented!()
+    }
+
     fn next(&mut self) -> bool {
         if self.i < self.rows.len() {
             self.i = self.i + 1;
@@ -148,6 +150,11 @@ impl rdbc::ResultSet for PResultSet {
     fn get_string(&self, i: usize) -> Option<String> {
         self.rows.get(self.i - 1).get(i - 1)
     }
+}
+
+/// Convert a Postgres error into an RDBC error
+fn to_rdbc_err(e: &postgres::error::Error) -> rdbc::Error {
+    rdbc::Error::General(format!("{:?}", e))
 }
 
 fn to_postgres_value(values: &Vec<rdbc::Value>) -> Vec<Box<dyn postgres::types::ToSql>> {
@@ -191,7 +198,7 @@ mod tests {
         Ok(())
     }
 
-    fn execute(sql: &str, values: &Vec<rdbc::Value>) -> rdbc::Result<usize> {
+    fn execute(sql: &str, values: &Vec<rdbc::Value>) -> rdbc::Result<u64> {
         println!("Executing '{}' with {} params", sql, values.len());
         let driver = PostgresDriver::new();
         let conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433")?;

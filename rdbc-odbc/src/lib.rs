@@ -65,7 +65,7 @@ impl<'con, 'b, AC> rdbc::Statement for OdbcStatement<'con, 'b, AC> where AC: Aut
         }
     }
 
-    fn execute_update(&mut self, params: &Vec<Value>) -> rdbc::Result<usize> {
+    fn execute_update(&mut self, params: &Vec<Value>) -> rdbc::Result<u64> {
         unimplemented!()
     }
 }

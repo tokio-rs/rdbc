@@ -72,18 +72,13 @@ fn connect_mysql() -> Result<Rc<RefCell<dyn Connection>>> {
 
 ```rust
 let conn = connect_postgres()?;
-//let conn = connect_mysql()?;
-let mut conn = conn.as_ref().borrow_mut();
-
-let stmt = conn.prepare("SELECT ?")?;
+let mut conn = conn.borrow_mut();
+let stmt = conn.prepare("SELECT a FROM b WHERE c = ?")?;
 let mut stmt = stmt.borrow_mut();
-
-let params = vec![rdbc::Value::Int32(1)];
-let rs = stmt.execute_query(&params)?;
+let rs = stmt.execute_query(&vec![Value::Int32(123)])?;
 let mut rs = rs.borrow_mut();
-
 while rs.next() {
-    println!("{:?}", rs.get_i32(1))
+  println!("{:?}", rs.get_string(1));
 }
 ```
 
@@ -94,7 +89,8 @@ This is just an experimental PoC and is not currently suitable for anything. How
 The immediate priorities though are:
 
 - [x] Announce project and get initial feedback
-- [ ] Support parameterized queries (both positional and named parameters)
+- [x] Support parameterized queries using positional parameters and prepared statements
+- [ ] Support parameterized queries using positional parameters and non-prepared statements
 - [ ] Implement unit and integration tests
 
 # Building

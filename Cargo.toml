@@ -4,6 +4,6 @@ members = [
     "rdbc",
     "rdbc-mysql",
     "rdbc-postgres",
-    "rdbc-odbc",
+#    "rdbc-odbc",
     "rdbc-cli",
 ]

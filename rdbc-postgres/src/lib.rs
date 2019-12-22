@@ -21,11 +21,9 @@ use std::rc::Rc;
 
 use postgres;
 use postgres::rows::Rows;
-use postgres::{Connection, TlsMode};
 
-use postgres::types::{IsNull, Type};
+use postgres::{Connection, TlsMode};
 use rdbc;
-use std::error::Error;
 
 /// Convert a Postgres error into an RDBC error
 fn to_rdbc_err(e: &postgres::error::Error) -> rdbc::Error {
@@ -121,50 +119,16 @@ impl rdbc::ResultSet for PResultSet {
     }
 }
 
-#[derive(Debug)]
-struct PostgresValue {
-    value: rdbc::Value,
-}
-
-impl PostgresValue {
-    fn from(value: &rdbc::Value) -> Self {
-        Self {
-            value: value.clone(),
-        }
-    }
-}
-
-impl postgres::types::ToSql for PostgresValue {
-    fn to_sql(&self, ty: &Type, out: &mut Vec<u8>) -> Result<IsNull, Box<dyn Error + Sync + Send>>
-    where
-        Self: Sized,
-    {
-        //TODO implement
-        unimplemented!()
-    }
-
-    fn accepts(ty: &Type) -> bool
-    where
-        Self: Sized,
-    {
-        //TODO implement
-        unimplemented!()
-    }
-
-    fn to_sql_checked(
-        &self,
-        ty: &Type,
-        out: &mut Vec<u8>,
-    ) -> Result<IsNull, Box<dyn Error + Sync + Send>> {
-        //TODO implement
-        unimplemented!()
-    }
-}
-
 fn to_postgres_value(values: &Vec<rdbc::Value>) -> Vec<Box<dyn postgres::types::ToSql>> {
     values
         .iter()
-        .map(|v| Box::new(PostgresValue::from(v)) as Box<dyn postgres::types::ToSql>)
+        .map(|v| {
+            match v {
+                rdbc::Value::String(s) => Box::new(s.clone()) as Box<dyn postgres::types::ToSql> ,
+                rdbc::Value::Int32(n) => Box::new(*n) as Box<dyn postgres::types::ToSql> ,
+                rdbc::Value::UInt32(n) => Box::new(*n) as Box<dyn postgres::types::ToSql> ,
+            }
+        })
         .collect()
 }
 
@@ -175,20 +139,34 @@ mod tests {
 
     #[test]
     fn execute_query() -> rdbc::Result<()> {
+        execute("DROP TABLE IF EXISTS test", &vec![])?;
+        execute("CREATE TABLE test (a INT NOT NULL)", &vec![])?;
+        execute("INSERT INTO test (a) VALUES ($1)", &vec![rdbc::Value::Int32(123)])?;
+
         let driver = PostgresDriver::new();
         let conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433")?;
         let mut conn = conn.as_ref().borrow_mut();
-        let stmt = conn.prepare("SELECT 1")?;
+        let stmt = conn.prepare("SELECT a FROM test")?;
         let mut stmt = stmt.borrow_mut();
-        let params = vec![/*rdbc::Value::Int32(1)*/];
-        let rs = stmt.execute_query(&params)?;
+        let rs = stmt.execute_query(&vec![])?;
 
         let mut rs = rs.as_ref().borrow_mut();
 
         assert!(rs.next());
-        assert_eq!(Some(1), rs.get_i32(1));
+        assert_eq!(Some(123), rs.get_i32(1));
         assert!(!rs.next());
 
         Ok(())
     }
+
+    fn execute(sql: &str, values: &Vec<rdbc::Value>) -> rdbc::Result<usize> {
+        println!("Executing '{}' with {} params", sql, values.len());
+        let driver = PostgresDriver::new();
+        let conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433")?;
+        let mut conn = conn.as_ref().borrow_mut();
+        let stmt = conn.prepare(sql)?;
+        let mut stmt = stmt.borrow_mut();
+        stmt.execute_update(values)
+    }
+
 }

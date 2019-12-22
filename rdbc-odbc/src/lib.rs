@@ -3,7 +3,7 @@ use std::rc::Rc;
 
 use odbc;
 use odbc::odbc_safe::{AutocommitMode, Version, Odbc3};
-use odbc::{Environment, HasResult, Allocated, NoResult};
+use odbc::{Environment, HasResult, Allocated, NoResult, Prepared};
 
 use rdbc;
 use rdbc::{Error, ResultSet, Statement, Value};
@@ -37,44 +37,32 @@ struct OdbcConnection<'a, V> where V: AutocommitMode {
 impl<'a, V> rdbc::Connection for OdbcConnection<'a, V> where V: AutocommitMode {
     fn prepare(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
         let stmt = odbc::Statement::with_parent(&self.conn).unwrap();
-        Ok(Rc::new(RefCell::new(OdbcStatement { stmt, sql: sql.to_owned() })) as Rc<RefCell<dyn rdbc::Statement>>)
+        let stmt = stmt.prepare(&sql).unwrap();
+        Ok(Rc::new(RefCell::new(OdbcStatement { stmt })) as Rc<RefCell<dyn rdbc::Statement>>)
     }
 }
 
-struct OdbcStatement<'con, 'b, S, R, AC> where AC: AutocommitMode {
-    stmt: odbc::Statement<'con, 'b, S, R, AC>,
-    sql: String
+struct OdbcStatement<'con, 'b, AC> where AC: AutocommitMode {
+    stmt: odbc::Statement<'con, 'b, Prepared, NoResult, AC>,
 }
 
-impl<'con, 'b, S, AC> rdbc::Statement for OdbcStatement<'con, 'b, S, HasResult, AC> where AC: AutocommitMode {
-
-    fn execute_query(
-        &mut self,
-        params: &Vec<Value>,
-    ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
-        unimplemented!()
-    }
-
-    fn execute_update(&mut self, params: &Vec<Value>) -> rdbc::Result<usize> {
-        unimplemented!()
-    }
-}
-
-impl<'con, 'b, AC> rdbc::Statement for OdbcStatement<'con, 'b, Allocated, NoResult, AC> where AC: AutocommitMode {
+impl<'con, 'b, AC> rdbc::Statement for OdbcStatement<'con, 'b, AC> where AC: AutocommitMode {
 
     fn execute_query(
         &mut self,
         params: &Vec<Value>,
     ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
 
-//        match &self.stmt.exec_direct(&self.sql).unwrap() {
-//            Data(stmt) => {
-//                //Ok(Rc::new(RefCell::new(OdbcStatement { stmt, sql: sql.to_owned() })) as Rc<RefCell<dyn rdbc::Statement>>)
-//                unimplemented!()
-//            },
-//            NoData(_) => unimplemented!()
-//        }
-        unimplemented!()
+        //TODO bind params
+        //self.stmt.bind_parameter(0, "foo");
+
+        match self.stmt.execute().unwrap() {
+            Data(mut stmt) => {
+                //Ok(Rc::new(RefCell::new(OdbcStatement { stmt, sql: sql.to_owned() })) as Rc<RefCell<dyn rdbc::Statement>>)
+                unimplemented!()
+            },
+            NoData(_) => unimplemented!()
+        }
     }
 
     fn execute_update(&mut self, params: &Vec<Value>) -> rdbc::Result<usize> {

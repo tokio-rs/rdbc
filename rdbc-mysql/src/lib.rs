@@ -131,7 +131,6 @@ pub struct MySQLResultSet<'a> {
 }
 
 impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
-
     fn meta_data(&self) -> rdbc::Result<Rc<dyn rdbc::ResultSetMetaData>> {
         unimplemented!()
     }

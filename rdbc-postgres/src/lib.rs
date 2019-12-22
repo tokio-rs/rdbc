@@ -29,7 +29,9 @@ use postgres::{Connection, TlsMode};
 use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::tokenizer::{Token, Tokenizer, Word};
 
+use postgres::types::Type;
 use rdbc;
+use rdbc::Column;
 
 pub struct PostgresDriver {}
 
@@ -111,7 +113,14 @@ impl<'a> rdbc::Statement for PStatement<'a> {
             .query(&self.sql, params.as_slice())
             .map_err(|e| to_rdbc_err(&e))
             .map(|rows| {
-                Rc::new(RefCell::new(PResultSet { i: 0, rows })) as Rc<RefCell<dyn rdbc::ResultSet>>
+                let meta = rows
+                    .columns()
+                    .iter()
+                    .map(|c| rdbc::Column::new(c.name(), to_rdbc_type(c.type_())))
+                    .collect();
+
+                Rc::new(RefCell::new(PResultSet { meta, i: 0, rows }))
+                    as Rc<RefCell<dyn rdbc::ResultSet>>
             })
     }
 
@@ -125,13 +134,14 @@ impl<'a> rdbc::Statement for PStatement<'a> {
 }
 
 struct PResultSet {
+    meta: Vec<Column>,
     i: usize,
     rows: Rows,
 }
 
 impl rdbc::ResultSet for PResultSet {
     fn meta_data(&self) -> rdbc::Result<Rc<dyn rdbc::ResultSetMetaData>> {
-        unimplemented!()
+        Ok(Rc::new(self.meta.clone()))
     }
 
     fn next(&mut self) -> bool {
@@ -155,6 +165,13 @@ impl rdbc::ResultSet for PResultSet {
 /// Convert a Postgres error into an RDBC error
 fn to_rdbc_err(e: &postgres::error::Error) -> rdbc::Error {
     rdbc::Error::General(format!("{:?}", e))
+}
+
+fn to_rdbc_type(ty: &Type) -> rdbc::DataType {
+    match ty.name() {
+        "" => rdbc::DataType::Bool,
+        _ => rdbc::DataType::Varchar,
+    }
 }
 
 fn to_postgres_value(values: &Vec<rdbc::Value>) -> Vec<Box<dyn postgres::types::ToSql>> {

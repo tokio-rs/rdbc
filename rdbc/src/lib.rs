@@ -91,7 +91,7 @@ pub trait ResultSetMetaData {
 /// RDBC Data Types
 #[derive(Debug, Copy, Clone)]
 pub enum DataType {
-    Varchar(u64),
+    Varchar,
     Integer,
     Float,
     Double,
@@ -103,4 +103,33 @@ pub enum DataType {
     Blob,
     Clob,
     //TODO: add more types and research ODBC and JDBC types
+}
+
+#[derive(Debug, Clone)]
+pub struct Column {
+    name: String,
+    data_type: DataType,
+}
+
+impl Column {
+    pub fn new(name: &str, data_type: DataType) -> Self {
+        Column {
+            name: name.to_owned(),
+            data_type,
+        }
+    }
+}
+
+impl ResultSetMetaData for Vec<Column> {
+    fn num_columns(&self) -> u64 {
+        self.len() as u64
+    }
+
+    fn column_name(&self, i: usize) -> String {
+        self[i].name.clone()
+    }
+
+    fn column_type(&self, i: usize) -> DataType {
+        self[i].data_type
+    }
 }

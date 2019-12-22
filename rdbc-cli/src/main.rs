@@ -4,7 +4,7 @@ use std::rc::Rc;
 use clap::{crate_version, App, Arg};
 use rustyline::Editor;
 
-use rdbc::{Connection, Result, DataType};
+use rdbc::{Connection, DataType, Result};
 use rdbc_mysql::MySQLDriver;
 use rdbc_postgres::PostgresDriver;
 
@@ -87,7 +87,7 @@ fn execute(conn: Rc<RefCell<dyn Connection>>, sql: &str) -> Result<()> {
     let meta = rs.meta_data()?;
 
     for i in 0..meta.num_columns() {
-        if i>0 {
+        if i > 0 {
             print!("\t");
         }
         print!("{}", meta.column_name(i + 1));

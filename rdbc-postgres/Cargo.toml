@@ -8,8 +8,8 @@ license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
-#rdbc = { path = "../rdbc" }
-rdbc = "0.1.4"
+rdbc = { path = "../rdbc" }
+#rdbc = "0.1.4"
 
 postgres = "0.15.2"
 sqlparser = "0.5.0"

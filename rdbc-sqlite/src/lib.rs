@@ -22,9 +22,9 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use fallible_streaming_iterator::FallibleStreamingIterator;
 use rdbc;
 use rusqlite::Rows;
-use fallible_streaming_iterator::FallibleStreamingIterator;
 
 /// Convert a Sqlite error into an RDBC error
 fn to_rdbc_err(e: &rusqlite::Error) -> rdbc::Error {
@@ -39,7 +39,8 @@ impl SqliteDriver {
     }
 
     pub fn connect_in_memory(&self) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection>>> {
-        rusqlite::Connection::open_in_memory().map_err(|e| to_rdbc_err(&e))
+        rusqlite::Connection::open_in_memory()
+            .map_err(|e| to_rdbc_err(&e))
             .map(|c| {
                 Ok(Rc::new(RefCell::new(SConnection::new(c))) as Rc<RefCell<dyn rdbc::Connection>>)
             })?
@@ -57,16 +58,13 @@ impl SConnection {
 }
 
 impl rdbc::Connection for SConnection {
-
     fn create(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
         self.prepare(sql)
     }
 
     fn prepare(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
         let stmt = self.conn.prepare(sql).map_err(|e| to_rdbc_err(&e))?;
-        Ok(Rc::new(RefCell::new(SStatement {
-            stmt,
-        })) as Rc<RefCell<dyn rdbc::Statement>>)
+        Ok(Rc::new(RefCell::new(SStatement { stmt })) as Rc<RefCell<dyn rdbc::Statement>>)
     }
 }
 
@@ -77,19 +75,22 @@ struct SStatement<'a> {
 impl<'a> rdbc::Statement for SStatement<'a> {
     fn execute_query(
         &mut self,
-        params: &Vec<rdbc::Value>,
+        params: &[rdbc::Value],
     ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
         let params = to_sqlite_value(params);
         let params: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|v| v.as_ref()).collect();
         let rows = self.stmt.query(&params).map_err(|e| to_rdbc_err(&e))?;
-        return Ok(Rc::new(RefCell::new(SResultSet {rows})) as Rc<RefCell<dyn rdbc::ResultSet>>);
-
+        return Ok(Rc::new(RefCell::new(SResultSet { rows })) as Rc<RefCell<dyn rdbc::ResultSet>>);
     }
 
-    fn execute_update(&mut self, params: &Vec<rdbc::Value>) -> rdbc::Result<u64> {
+    fn execute_update(&mut self, params: &[rdbc::Value]) -> rdbc::Result<u64> {
         let params = to_sqlite_value(params);
         let params: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|v| v.as_ref()).collect();
-        return self.stmt.execute(&params).map_err(|e| to_rdbc_err(&e)).map(|n|n as u64);
+        return self
+            .stmt
+            .execute(&params)
+            .map_err(|e| to_rdbc_err(&e))
+            .map(|n| n as u64);
     }
 }
 
@@ -98,11 +99,9 @@ struct SResultSet<'stmt> {
 }
 
 impl<'stmt> rdbc::ResultSet for SResultSet<'stmt> {
-
     fn meta_data(&self) -> rdbc::Result<Rc<dyn rdbc::ResultSetMetaData>> {
         unimplemented!()
     }
-
 
     fn next(&mut self) -> bool {
         self.rows.next().unwrap().is_some()
@@ -117,7 +116,7 @@ impl<'stmt> rdbc::ResultSet for SResultSet<'stmt> {
     }
 }
 
-fn to_sqlite_value(values: &Vec<rdbc::Value>) -> Vec<Box<dyn rusqlite::types::ToSql>> {
+fn to_sqlite_value(values: &[rdbc::Value]) -> Vec<Box<dyn rusqlite::types::ToSql>> {
     values
         .iter()
         .map(|v| match v {
@@ -138,8 +137,9 @@ mod tests {
         let mut conn = driver.connect_in_memory()?;
         execute(&mut conn, "DROP TABLE IF EXISTS test", &vec![])?;
         execute(&mut conn, "CREATE TABLE test (a INT NOT NULL)", &vec![])?;
-        execute(&mut conn,
-                "INSERT INTO test (a) VALUES (?)",
+        execute(
+            &mut conn,
+            "INSERT INTO test (a) VALUES (?)",
             &vec![rdbc::Value::Int32(123)],
         )?;
 
@@ -157,7 +157,11 @@ mod tests {
         Ok(())
     }
 
-    fn execute(conn: &mut Rc<RefCell<dyn Connection>>, sql: &str, values: &Vec<rdbc::Value>) -> rdbc::Result<u64> {
+    fn execute(
+        conn: &mut Rc<RefCell<dyn Connection>>,
+        sql: &str,
+        values: &Vec<rdbc::Value>,
+    ) -> rdbc::Result<u64> {
         println!("Executing '{}' with {} params", sql, values.len());
         let mut conn = conn.as_ref().borrow_mut();
         let stmt = conn.prepare(sql)?;

@@ -9,5 +9,7 @@ edition = "2018"
 
 [dependencies]
 rdbc = { path = "../rdbc" }
+#rdbc = "0.1.4"
+
 rusqlite = { version = "0.21.0", features = ["bundled"]}
 fallible-streaming-iterator = "0.1"

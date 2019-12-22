@@ -79,7 +79,7 @@ struct MySQLStatement<'a> {
 impl<'a> rdbc::Statement for MySQLStatement<'a> {
     fn execute_query(
         &mut self,
-        params: &Vec<rdbc::Value>,
+        params: &[rdbc::Value],
     ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
         let sql = rewrite(&self.sql, params);
         self.conn
@@ -91,7 +91,7 @@ impl<'a> rdbc::Statement for MySQLStatement<'a> {
             })
     }
 
-    fn execute_update(&mut self, params: &Vec<rdbc::Value>) -> rdbc::Result<u64> {
+    fn execute_update(&mut self, params: &[rdbc::Value]) -> rdbc::Result<u64> {
         let sql = rewrite(&self.sql, params);
         self.conn
             .query(&sql)
@@ -107,7 +107,7 @@ struct MySQLPreparedStatement<'a> {
 impl<'a> rdbc::Statement for MySQLPreparedStatement<'a> {
     fn execute_query(
         &mut self,
-        params: &Vec<rdbc::Value>,
+        params: &[rdbc::Value],
     ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
         self.stmt
             .execute(to_my_params(params))
@@ -118,7 +118,7 @@ impl<'a> rdbc::Statement for MySQLPreparedStatement<'a> {
             })
     }
 
-    fn execute_update(&mut self, params: &Vec<rdbc::Value>) -> rdbc::Result<u64> {
+    fn execute_update(&mut self, params: &[rdbc::Value]) -> rdbc::Result<u64> {
         self.stmt
             .execute(to_my_params(params))
             .map_err(|e| to_rdbc_err(&e))
@@ -181,11 +181,11 @@ fn to_my_value(v: &rdbc::Value) -> my::Value {
 }
 
 /// Convert RDBC parameters to MySQL parameters
-fn to_my_params(params: &Vec<rdbc::Value>) -> my::Params {
+fn to_my_params(params: &[rdbc::Value]) -> my::Params {
     my::Params::Positional(params.iter().map(|v| to_my_value(v)).collect())
 }
 
-fn rewrite(sql: &str, params: &Vec<rdbc::Value>) -> String {
+fn rewrite(sql: &str, params: &[rdbc::Value]) -> String {
     let dialect = MySqlDialect {};
     let mut tokenizer = Tokenizer::new(&dialect, sql);
     let tokens = tokenizer.tokenize().unwrap();

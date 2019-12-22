@@ -105,7 +105,7 @@ struct PStatement<'a> {
 impl<'a> rdbc::Statement for PStatement<'a> {
     fn execute_query(
         &mut self,
-        params: &Vec<rdbc::Value>,
+        params: &[rdbc::Value],
     ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
         let params = to_postgres_value(params);
         let params: Vec<&dyn postgres::types::ToSql> = params.iter().map(|v| v.as_ref()).collect();
@@ -124,7 +124,7 @@ impl<'a> rdbc::Statement for PStatement<'a> {
             })
     }
 
-    fn execute_update(&mut self, params: &Vec<rdbc::Value>) -> rdbc::Result<u64> {
+    fn execute_update(&mut self, params: &[rdbc::Value]) -> rdbc::Result<u64> {
         let params = to_postgres_value(params);
         let params: Vec<&dyn postgres::types::ToSql> = params.iter().map(|v| v.as_ref()).collect();
         self.conn
@@ -175,7 +175,7 @@ fn to_rdbc_type(ty: &Type) -> rdbc::DataType {
     }
 }
 
-fn to_postgres_value(values: &Vec<rdbc::Value>) -> Vec<Box<dyn postgres::types::ToSql>> {
+fn to_postgres_value(values: &[rdbc::Value]) -> Vec<Box<dyn postgres::types::ToSql>> {
     values
         .iter()
         .map(|v| match v {

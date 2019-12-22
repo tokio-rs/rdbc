@@ -62,9 +62,9 @@ pub trait Connection {
 /// Represents an executable statement
 pub trait Statement {
     /// Execute a query that is expected to return a result set, such as a `SELECT` statement
-    fn execute_query(&mut self, params: &Vec<Value>) -> Result<Rc<RefCell<dyn ResultSet + '_>>>;
+    fn execute_query(&mut self, params: &[Value]) -> Result<Rc<RefCell<dyn ResultSet + '_>>>;
     /// Execute a query that is expected to update some rows.
-    fn execute_update(&mut self, params: &Vec<Value>) -> Result<u64>;
+    fn execute_update(&mut self, params: &[Value]) -> Result<u64>;
 }
 
 /// Result set from executing a query against a statement

@@ -1,17 +1,48 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use clap::{crate_version, App, Arg};
 use rustyline::Editor;
 
 use rdbc::{Connection, Result};
 use rdbc_mysql::MySQLDriver;
 use rdbc_postgres::PostgresDriver;
 
-
-//TODO: turn this into a CLI ... for now, just demonstrate that the same code can be used
-// with Postgres and MySQL
 fn main() -> Result<()> {
-    let conn = connect_postgres()?;
+    let matches = App::new("rdbc-cli")
+        .version(crate_version!())
+        .about("Rust DataBase Connectivity SQL Console")
+        .arg(
+            Arg::with_name("driver")
+                .help("RDBC driver name")
+                .short("d")
+                .long("driver")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("connection-url")
+                .help("The database connection URL")
+                .short("c")
+                .long("connection-url")
+                .takes_value(true),
+        )
+        .get_matches();
+
+    let driver = matches.value_of("driver").unwrap();
+    let url = matches.value_of("connection-url").unwrap();
+    println!("Connecting to {} driver with url: {}", driver, url);
+
+    let conn = match driver {
+        "mysql" => {
+            let driver = MySQLDriver::new();
+            driver.connect(url)
+        }
+        "postgres" => {
+            let driver = PostgresDriver::new();
+            driver.connect(url)
+        }
+        _ => panic!("Invalid driver"),
+    }?;
 
     let mut rl = Editor::<()>::new();
     rl.load_history(".history").ok();
@@ -24,7 +55,10 @@ fn main() -> Result<()> {
                 query.push_str(line.trim_end());
                 rl.add_history_entry(query.clone());
 
-                execute(conn.clone(), &query).unwrap();
+                match execute(conn.clone(), &query) {
+                    Ok(_) => {}
+                    Err(e) => println!("Error: {:?}", e),
+                }
 
                 query = "".to_owned();
             }
@@ -43,16 +77,6 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn connect_mysql() -> Result<Rc<RefCell<dyn Connection + 'static>>> {
-    let driver = MySQLDriver::new();
-    driver.connect("mysql://root:secret@127.0.0.1:3307")
-}
-
-fn connect_postgres() -> Result<Rc<RefCell<dyn Connection>>> {
-    let driver = PostgresDriver::new();
-    driver.connect("postgres://rdbc:secret@127.0.0.1:5433")
-}
-
 fn execute(conn: Rc<RefCell<dyn Connection>>, sql: &str) -> Result<()> {
     println!("Executing {}", sql);
     let mut conn = conn.borrow_mut();
@@ -60,7 +84,7 @@ fn execute(conn: Rc<RefCell<dyn Connection>>, sql: &str) -> Result<()> {
     let mut stmt = stmt.borrow_mut();
     let rs = stmt.execute_query(&vec![])?;
     let mut rs = rs.borrow_mut();
-    let meta = rs.meta_data().unwrap();
+    let meta = rs.meta_data()?;
 
     for i in 0..meta.num_columns() {
         print!("{}\t", meta.column_name(i + 1));

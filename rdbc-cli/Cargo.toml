@@ -15,4 +15,5 @@ rdbc-postgres = { path = "../rdbc-postgres" }
 #rdbc-mysql = "0.1.2"
 #rdbc-postgres = "0.1.2"
 
+clap = "2.33.0"
 rustyline = "4.1.0"

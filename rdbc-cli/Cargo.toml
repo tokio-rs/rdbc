@@ -7,13 +7,9 @@ license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
-rdbc = { path = "../rdbc" }
-rdbc-mysql = { path = "../rdbc-mysql" }
-rdbc-postgres = { path = "../rdbc-postgres" }
-
-#rdbc = "0.1.4"
-#rdbc-mysql = "0.1.4"
-#rdbc-postgres = "0.1.4"
+rdbc = { path = "../rdbc", version = "0.1.4" }
+rdbc-mysql = { path = "../rdbc-mysql", version = "0.1.4" }
+rdbc-postgres = { path = "../rdbc-postgres", version = "0.1.4" }
 
 clap = "2.33.0"
 rustyline = "4.1.0"

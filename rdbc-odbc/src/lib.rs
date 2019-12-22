@@ -6,7 +6,7 @@ use odbc::odbc_safe::{AutocommitMode, Version, Odbc3};
 use odbc::{Environment, HasResult, Allocated, NoResult, Prepared};
 
 use rdbc;
-use rdbc::{Error, ResultSet, Statement, Value};
+use rdbc::{Error, ResultSet, Statement, Value, ResultSetMetaData};
 use odbc::ResultSetState::{NoData, Data};
 
 struct OdbcDriver {
@@ -35,6 +35,11 @@ struct OdbcConnection<'a, V> where V: AutocommitMode {
 }
 
 impl<'a, V> rdbc::Connection for OdbcConnection<'a, V> where V: AutocommitMode {
+
+    fn create(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
+        self.prepare(sql)
+    }
+
     fn prepare(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
         let stmt = odbc::Statement::with_parent(&self.conn).unwrap();
         let stmt = stmt.prepare(&sql).unwrap();
@@ -50,22 +55,24 @@ impl<'con, 'b, AC> rdbc::Statement for OdbcStatement<'con, 'b, AC> where AC: Aut
 
     fn execute_query(
         &mut self,
-        params: &Vec<Value>,
+        params: &[Value],
     ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
 
         //TODO bind params
         //self.stmt.bind_parameter(0, "foo");
 
-        match self.stmt.execute().unwrap() {
-            Data(mut stmt) => {
-                //Ok(Rc::new(RefCell::new(OdbcStatement { stmt, sql: sql.to_owned() })) as Rc<RefCell<dyn rdbc::Statement>>)
-                unimplemented!()
-            },
-            NoData(_) => unimplemented!()
-        }
+//        match self.stmt.execute().unwrap() {
+//            Data(mut stmt) => {
+//                //Ok(Rc::new(RefCell::new(OdbcStatement { stmt, sql: sql.to_owned() })) as Rc<RefCell<dyn rdbc::Statement>>)
+//                unimplemented!()
+//            },
+//            NoData(_) => unimplemented!()
+//        }
+
+        unimplemented!()
     }
 
-    fn execute_update(&mut self, params: &Vec<Value>) -> rdbc::Result<u64> {
+    fn execute_update(&mut self, params: &[Value]) -> rdbc::Result<u64> {
         unimplemented!()
     }
 }
@@ -73,15 +80,20 @@ impl<'con, 'b, AC> rdbc::Statement for OdbcStatement<'con, 'b, AC> where AC: Aut
 struct OdbcResultSet {}
 
 impl rdbc::ResultSet for OdbcResultSet {
+
+    fn meta_data(&self) -> Result<Rc<ResultSetMetaData>, Error> {
+        unimplemented!()
+    }
+
     fn next(&mut self) -> bool {
         unimplemented!()
     }
 
-    fn get_i32(&self, i: usize) -> Option<i32> {
+    fn get_i32(&self, i: u64) -> Option<i32> {
         unimplemented!()
     }
 
-    fn get_string(&self, i: usize) -> Option<String> {
+    fn get_string(&self, i: u64) -> Option<String> {
         unimplemented!()
     }
 }
@@ -107,11 +119,3 @@ impl rdbc::ResultSet for OdbcResultSet {
 //
 //    Ok(())
 //}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
-}

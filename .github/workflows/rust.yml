@@ -9,9 +9,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    - name: Build
-      run: cargo build --verbose
     - name: Start database servers
       run: docker-compose up -d
+    - name: Check formatting
+      run: cargo fmt --all -- --check
+    - name: Build
+      run: cargo build
     - name: Run tests
-      run: cargo test --verbose
+      run: cargo test

@@ -1,16 +1,16 @@
 [package]
 name = "rdbc-cli"
 description = "Command line tool for querying RDBC data sources"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["Andy Grove <andygrove73@gmail.com>"]
 license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
-rdbc = { path = "../rdbc", version = "0.1.5" }
-rdbc-mysql = { path = "../rdbc-mysql", version = "0.1.5" }
-rdbc-postgres = { path = "../rdbc-postgres", version = "0.1.5" }
-rdbc-sqlite = { path = "../rdbc-sqlite", version = "0.1.5" }
+rdbc = { path = "../rdbc", version = "0.1.6" }
+rdbc-mysql = { path = "../rdbc-mysql", version = "0.1.6" }
+rdbc-postgres = { path = "../rdbc-postgres", version = "0.1.6" }
+rdbc-sqlite = { path = "../rdbc-sqlite", version = "0.1.6" }
 
 clap = "2.33.0"
 rustyline = "4.1.0"

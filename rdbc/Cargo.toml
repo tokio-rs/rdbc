@@ -1,7 +1,7 @@
 [package]
 name = "rdbc"
 description = "Rust DataBase Connectivity (RDBC) API"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["Andy Grove <andygrove73@gmail.com>"]
 license = "Apache-2.0"
 edition = "2018"

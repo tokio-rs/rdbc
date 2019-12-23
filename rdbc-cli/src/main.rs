@@ -7,6 +7,7 @@ use rustyline::Editor;
 use rdbc::{Connection, DataType, Result};
 use rdbc_mysql::MySQLDriver;
 use rdbc_postgres::PostgresDriver;
+use rdbc_sqlite::SqliteDriver;
 
 fn main() -> Result<()> {
     let matches = App::new("rdbc-cli")
@@ -35,6 +36,7 @@ fn main() -> Result<()> {
     let driver = match driver {
         "mysql" => Rc::new(MySQLDriver::new()) as Rc<dyn rdbc::Driver>,
         "postgres" => Rc::new(PostgresDriver::new()) as Rc<dyn rdbc::Driver>,
+        "sqlite" => Rc::new(SqliteDriver::new()) as Rc<dyn rdbc::Driver>,
         _ => panic!("Invalid driver"),
     };
 

@@ -1,14 +1,14 @@
 [package]
 name = "rdbc-postgres"
 description = " Postgres RDBC Driver"
-version = "0.1.4"
+version = "0.1.5"
 authors = ["Andy Grove <andygrove73@gmail.com>"]
 license = "Apache-2.0"
 
 edition = "2018"
 
 [dependencies]
-rdbc = { path = "../rdbc", version = "0.1.4" }
+rdbc = { path = "../rdbc", version = "0.1.5" }
 
 postgres = "0.15.2"
 sqlparser = "0.5.0"

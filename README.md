@@ -17,7 +17,7 @@ This is filling a different need. I love the [Diesel](https://diesel.rs/) approa
 
 # RDBC API
 
-Note that the design of the RDBC API is intentionally modeled directly after ODBC and JDBC (except that indixes are 0-based rather than 1-based).
+Note that the design of the RDBC API is intentionally modeled directly after ODBC and JDBC (except that indices are 0-based rather than 1-based).
 
 There is currently no `async` support but that will likely be addressed soon.
 

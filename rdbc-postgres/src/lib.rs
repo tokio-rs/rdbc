@@ -238,7 +238,7 @@ mod tests {
         let mut rs = rs.as_ref().borrow_mut();
 
         assert!(rs.next());
-        assert_eq!(Some(123), rs.get_i32(0).unwrap());
+        assert_eq!(Some(123), rs.get_i32(0)?);
         assert!(!rs.next());
 
         Ok(())

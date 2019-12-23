@@ -41,9 +41,8 @@ impl PostgresDriver {
     }
 }
 
-impl<'a,'b> rdbc::Driver <'a,'b>for PostgresDriver {
-
-    fn connect(&'a self, url: &'b str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection + 'a>>> {
+impl rdbc::Driver for PostgresDriver {
+    fn connect(&self, url: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection + 'static>>> {
         postgres::Connection::connect(url, TlsMode::None)
             .map_err(|e| to_rdbc_err(&e))
             .map(|c| {

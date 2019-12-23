@@ -43,9 +43,8 @@ impl MySQLDriver {
     }
 }
 
-impl<'a,'b> rdbc::Driver<'a,'b> for MySQLDriver {
-
-    fn connect(&'a self, url: &'b str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection + 'a>>> {
+impl rdbc::Driver for MySQLDriver {
+    fn connect(&self, url: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection + 'static>>> {
         let opts = my::Opts::from_url(&url).expect("DATABASE_URL invalid");
         my::Conn::new(opts)
             .map_err(|e| to_rdbc_err(&e))

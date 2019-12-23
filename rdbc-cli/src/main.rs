@@ -1,6 +1,5 @@
 use std::cell::RefCell;
 use std::rc::Rc;
-use std::sync::Arc;
 
 use clap::{crate_version, App, Arg};
 use rustyline::Editor;
@@ -33,11 +32,11 @@ fn main() -> Result<()> {
     let url = matches.value_of("connection-url").unwrap();
     println!("Connecting to {} driver with url: {}", driver, url);
 
-    let driver: Arc<dyn rdbc::Driver> = match driver {
-        "mysql" => Arc::new(MySQLDriver::new()),
-        "postgres" => Arc::new(PostgresDriver::new()),
+    let driver = match driver {
+        "mysql" => Rc::new(MySQLDriver::new()) as Rc<dyn rdbc::Driver>,
+        "postgres" => Rc::new(PostgresDriver::new()) as Rc<dyn rdbc::Driver>,
         _ => panic!("Invalid driver"),
-    }?;
+    };
 
     let conn = driver.connect(url).unwrap();
 

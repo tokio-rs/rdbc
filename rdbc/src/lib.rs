@@ -51,8 +51,12 @@ impl ToString for Value {
 /// RDBC Result type
 pub type Result<T> = std::result::Result<T, Error>;
 
-pub trait Driver<'a,'b>: Sync + Send {
-    fn connect(&'a self, url: &'b str) -> Result<Rc<RefCell<dyn Connection + 'a>>>;
+/// Represents database driver that can be shared between threads, and can therefore implement
+/// a connection pool
+pub trait Driver: Sync + Send {
+    /// Create a connection to the database. Note that connections are intended to be used
+    /// in a single thread since most database connections are not thread-safe
+    fn connect(&self, url: &str) -> Result<Rc<RefCell<dyn Connection + 'static>>>;
 }
 
 /// Represents a connection to a database

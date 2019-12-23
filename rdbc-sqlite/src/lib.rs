@@ -5,10 +5,11 @@
 //! The RDBC (Rust DataBase Connectivity) API is loosely based on the ODBC and JDBC standards.
 //!
 //! ```rust
-//! use rdbc::Value;
+//! use std::sync::Arc;
+//! use rdbc::{self, Value};
 //! use rdbc_sqlite::SqliteDriver;
-//! let driver = SqliteDriver::new();
-//! let conn = driver.connect_in_memory().unwrap();
+//! let driver: Arc<dyn rdbc::Driver> = Arc::new(SqliteDriver::new());
+//! let conn = driver.connect("").unwrap();
 //! let mut conn = conn.borrow_mut();
 //! let stmt = conn.prepare("CREATE TABLE test (a INT NOT NULL)").unwrap().borrow_mut().execute_update(&vec![]).unwrap();
 //! let stmt = conn.prepare("INSERT INTO test (a) VALUES (?)").unwrap().borrow_mut().execute_update(&vec![rdbc::Value::Int32(123)]).unwrap();
@@ -39,9 +40,8 @@ impl SqliteDriver {
     }
 }
 
-impl<'a,'b> rdbc::Driver<'a,'b> for SqliteDriver {
-
-    fn connect(&'a self, _url: &'b str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection + 'a>>> {
+impl rdbc::Driver for SqliteDriver {
+    fn connect(&self, _url: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection + 'static>>> {
         rusqlite::Connection::open_in_memory()
             .map_err(|e| to_rdbc_err(&e))
             .map(|c| {
@@ -147,13 +147,14 @@ fn to_sqlite_value(values: &[rdbc::Value]) -> Vec<Box<dyn rusqlite::types::ToSql
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::sync::Arc;
     use rdbc::{Connection, DataType};
+    use std::sync::Arc;
 
     #[test]
     fn execute_query() -> rdbc::Result<()> {
         let driver: Arc<dyn rdbc::Driver> = Arc::new(SqliteDriver::new());
-        let mut conn = driver.connect("")?;
+        let url = "";
+        let mut conn = driver.connect(url)?;
         execute(&mut conn, "DROP TABLE IF EXISTS test", &vec![])?;
         execute(&mut conn, "CREATE TABLE test (a INT NOT NULL)", &vec![])?;
         execute(

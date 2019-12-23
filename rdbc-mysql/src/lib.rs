@@ -67,9 +67,13 @@ impl rdbc::Connection for MySQLConnection {
     }
 
     fn prepare(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
-        let stmt = self.conn.prepare(&sql).unwrap();
-        Ok(Rc::new(RefCell::new(MySQLPreparedStatement { stmt }))
-            as Rc<RefCell<dyn rdbc::Statement>>)
+        self.conn
+            .prepare(&sql)
+            .and_then(|stmt| {
+                Ok(Rc::new(RefCell::new(MySQLPreparedStatement { stmt }))
+                    as Rc<RefCell<dyn rdbc::Statement>>)
+            })
+            .map_err(|e| to_rdbc_err(&e))
     }
 }
 
@@ -83,7 +87,7 @@ impl<'a> rdbc::Statement for MySQLStatement<'a> {
         &mut self,
         params: &[rdbc::Value],
     ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
-        let sql = rewrite(&self.sql, params);
+        let sql = rewrite(&self.sql, params)?;
         self.conn
             .query(&sql)
             .map_err(|e| to_rdbc_err(&e))
@@ -94,7 +98,7 @@ impl<'a> rdbc::Statement for MySQLStatement<'a> {
     }
 
     fn execute_update(&mut self, params: &[rdbc::Value]) -> rdbc::Result<u64> {
-        let sql = rewrite(&self.sql, params);
+        let sql = rewrite(&self.sql, params)?;
         self.conn
             .query(&sql)
             .map_err(|e| to_rdbc_err(&e))
@@ -229,35 +233,39 @@ fn to_my_params(params: &[rdbc::Value]) -> my::Params {
     my::Params::Positional(params.iter().map(|v| to_my_value(v)).collect())
 }
 
-fn rewrite(sql: &str, params: &[rdbc::Value]) -> String {
+fn rewrite(sql: &str, params: &[rdbc::Value]) -> rdbc::Result<String> {
     let dialect = MySqlDialect {};
     let mut tokenizer = Tokenizer::new(&dialect, sql);
-    let tokens = tokenizer.tokenize().unwrap();
-    let mut i = 0;
+    tokenizer
+        .tokenize()
+        .and_then(|tokens| {
+            let mut i = 0;
 
-    let tokens: Vec<Token> = tokens
-        .iter()
-        .map(|t| match t {
-            Token::Char(c) if *c == '?' => {
-                let param = &params[i];
-                i += 1;
-                Token::Word(Word {
-                    value: param.to_string(),
-                    quote_style: None,
-                    keyword: "".to_owned(),
+            let tokens: Vec<Token> = tokens
+                .iter()
+                .map(|t| match t {
+                    Token::Char(c) if *c == '?' => {
+                        let param = &params[i];
+                        i += 1;
+                        Token::Word(Word {
+                            value: param.to_string(),
+                            quote_style: None,
+                            keyword: "".to_owned(),
+                        })
+                    }
+                    _ => t.clone(),
                 })
-            }
-            _ => t.clone(),
+                .collect();
+
+            let sql = tokens
+                .iter()
+                .map(|t| format!("{}", t))
+                .collect::<Vec<String>>()
+                .join("");
+
+            Ok(sql)
         })
-        .collect();
-
-    let sql = tokens
-        .iter()
-        .map(|t| format!("{}", t))
-        .collect::<Vec<String>>()
-        .join("");
-
-    sql
+        .map_err(|e| rdbc::Error::General(format!("{:?}", e)))
 }
 
 #[cfg(test)]
@@ -285,7 +293,7 @@ mod tests {
         let mut rs = rs.as_ref().borrow_mut();
 
         assert!(rs.next());
-        assert_eq!(Some(123), rs.get_i32(0).unwrap());
+        assert_eq!(Some(123), rs.get_i32(0)?);
         assert!(!rs.next());
 
         Ok(())

@@ -17,13 +17,19 @@ This is filling a different need. I love the [Diesel](https://diesel.rs/) approa
 
 # RDBC API
 
-Currently there are traits representing `Connection`, `Statement`, `ResultSet`, and `ResultSetMetaData`. Later, there will be a `Driver` trait as well, with support for connection pooling. 
+Note that the design of the RDBC API is intentionally not idiomatic Rust and is modeled directly after ODBC and JDBC (including those annoying 1-based indices for looking up values). These traits can be wrapped by idiomatic Rust code and there will be features added to RDBC to facilitate that.
 
 There is currently no `async` support but that will likely be addressed soon.
 
-Note that the design of the RDBC API is intentionally not idiomatic Rust and is modeled directly after ODBC and JDBC (including those annoying 1-based indices for looking up values). These traits can be wrapped by idiomatic Rust code and there will be features added to RDBC to facilitate that.
-
 ```rust
+/// Represents database driver that can be shared between threads, and can therefore implement
+/// a connection pool
+pub trait Driver: Sync + Send {
+    /// Create a connection to the database. Note that connections are intended to be used
+    /// in a single thread since most database connections are not thread-safe
+    fn connect(&self, url: &str) -> Result<Rc<RefCell<dyn Connection + 'static>>>;
+}
+
 /// Represents a connection to a database
 pub trait Connection {
     /// Create a statement for execution

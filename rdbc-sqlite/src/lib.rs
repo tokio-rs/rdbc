@@ -204,8 +204,8 @@ mod tests {
 
         let meta = rs.meta_data().unwrap();
         assert_eq!(1, meta.num_columns());
-        assert_eq!("a".to_owned(), meta.column_name(1));
-        assert_eq!(DataType::Integer, meta.column_type(1));
+        assert_eq!("a".to_owned(), meta.column_name(0));
+        assert_eq!(DataType::Integer, meta.column_type(0));
 
         assert!(rs.next());
         assert_eq!(Some(123), rs.get_i32(0).unwrap());

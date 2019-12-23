@@ -1,14 +1,14 @@
 [package]
 name = "rdbc-sqlite"
 description = "SQLite RDBC Driver"
-version = "0.1.5"
+version = "0.1.6"
 authors = ["Andy Grove <andygrove73@gmail.com>", "Manuel Woelker <github@manuel.woelker.org>"]
 license = "Apache-2.0"
 
 edition = "2018"
 
 [dependencies]
-rdbc = { path = "../rdbc", version = "0.1.5" }
+rdbc = { path = "../rdbc", version = "0.1.6" }
 
 rusqlite = { version = "0.21.0", features = ["bundled"]}
 fallible-streaming-iterator = "0.1"

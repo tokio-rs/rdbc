@@ -115,14 +115,12 @@ The immediate priorities though are:
 - [x] Support parameterized queries
 - [x] Support prepared statements
 - [x] Implement simple SQL console CLI
-- [ ] Fix error handling (i.e. remove all the unwraps)
 - [ ] Design for async
 - [ ] Support connection pooling
 - [ ] Implement comprehensive unit and integration tests
-- [ ] Add support for all MySQL data types
-- [ ] Add support for all Postgres data types
-- [ ] Add support for all SQLite data types
+- [ ] Add support for more data types
 - [ ] Implement RDBC-ODBC bridge
+- [ ] Implement dynamic loading of drivers at runtime
 
 # License
 

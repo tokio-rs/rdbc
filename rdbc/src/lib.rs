@@ -115,7 +115,6 @@ pub enum DataType {
     Datetime,
     Utf8,
     Binary,
-    //TODO: add more types and research ODBC and JDBC types
 }
 
 #[derive(Debug, Clone)]
@@ -139,10 +138,10 @@ impl ResultSetMetaData for Vec<Column> {
     }
 
     fn column_name(&self, i: u64) -> String {
-        self[i as usize - 1].name.clone()
+        self[i as usize].name.clone()
     }
 
     fn column_type(&self, i: u64) -> DataType {
-        self[i as usize - 1].data_type
+        self[i as usize].data_type
     }
 }

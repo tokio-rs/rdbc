@@ -77,16 +77,19 @@ pub trait Statement {
 
 /// Result set from executing a query against a statement
 pub trait ResultSet {
-    // get meta data about this result set
+    /// get meta data about this result set
     fn meta_data(&self) -> Result<Rc<dyn ResultSetMetaData>>;
     /// Move the cursor to the next available row if one exists and return true if it does
     fn next(&mut self) -> bool;
-    /// Get the i32 value at column `i` (1-based)
-    fn get_i32(&self, i: u64) -> Option<i32>;
-    /// Get the String value at column `i` (1-based)
-    fn get_string(&self, i: u64) -> Option<String>;
 
-    //TODO add accessors for all data types
+    fn get_i8(&self, i: u64) -> Result<Option<i8>>;
+    fn get_i16(&self, i: u64) -> Result<Option<i16>>;
+    fn get_i32(&self, i: u64) -> Result<Option<i32>>;
+    fn get_i64(&self, i: u64) -> Result<Option<i64>>;
+    fn get_f32(&self, i: u64) -> Result<Option<f32>>;
+    fn get_f64(&self, i: u64) -> Result<Option<f64>>;
+    fn get_string(&self, i: u64) -> Result<Option<String>>;
+    fn get_bytes(&self, i: u64) -> Result<Option<Vec<u8>>>;
 }
 
 /// Meta data for result set
@@ -112,7 +115,6 @@ pub enum DataType {
     Datetime,
     Utf8,
     Binary,
-    //TODO: add more types and research ODBC and JDBC types
 }
 
 #[derive(Debug, Clone)]
@@ -136,10 +138,10 @@ impl ResultSetMetaData for Vec<Column> {
     }
 
     fn column_name(&self, i: u64) -> String {
-        self[i as usize - 1].name.clone()
+        self[i as usize].name.clone()
     }
 
     fn column_type(&self, i: u64) -> DataType {
-        self[i as usize - 1].data_type
+        self[i as usize].data_type
     }
 }

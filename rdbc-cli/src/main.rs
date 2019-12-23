@@ -86,7 +86,7 @@ fn execute(conn: Rc<RefCell<dyn Connection>>, sql: &str) -> Result<()> {
         if i > 0 {
             print!("\t");
         }
-        print!("{}", meta.column_name(i + 1));
+        print!("{}", meta.column_name(i));
     }
     println!();
 
@@ -95,12 +95,11 @@ fn execute(conn: Rc<RefCell<dyn Connection>>, sql: &str) -> Result<()> {
             if i > 0 {
                 print!("\t");
             }
-            let col_index = i + 1;
-            match meta.column_type(col_index) {
-                DataType::Utf8 => print!("{:?}", rs.get_string(col_index)),
-                DataType::Integer => print!("{:?}", rs.get_i32(col_index)),
+            match meta.column_type(i) {
+                DataType::Utf8 => print!("{:?}", rs.get_string(i)),
+                DataType::Integer => print!("{:?}", rs.get_i32(i)),
                 // TODO other types
-                _ => print!("{:?}", rs.get_string(col_index)),
+                _ => print!("{:?}", rs.get_string(i)),
             }
         }
         println!();

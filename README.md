@@ -17,7 +17,7 @@ This is filling a different need. I love the [Diesel](https://diesel.rs/) approa
 
 # RDBC API
 
-Note that the design of the RDBC API is intentionally not idiomatic Rust and is modeled directly after ODBC and JDBC (including those annoying 1-based indices for looking up values). These traits can be wrapped by idiomatic Rust code and there will be features added to RDBC to facilitate that.
+Note that the design of the RDBC API is intentionally modeled directly after ODBC and JDBC (except that indixes are 0-based rather than 1-based).
 
 There is currently no `async` support but that will likely be addressed soon.
 

@@ -17,7 +17,7 @@
 //! let mut stmt = stmt.borrow_mut();
 //! let rs = stmt.execute_query(&vec![]).unwrap();
 //! assert!(rs.as_ref().borrow_mut().next());
-//! assert_eq!(Some(123), rs.as_ref().borrow_mut().get_i32(1));
+//! assert_eq!(Some(123), rs.as_ref().borrow_mut().get_i32(0).unwrap());
 //! ```
 
 use std::cell::RefCell;
@@ -117,12 +117,44 @@ impl<'stmt> rdbc::ResultSet for SResultSet<'stmt> {
         self.rows.next().unwrap().is_some()
     }
 
-    fn get_i32(&self, i: u64) -> Option<i32> {
-        self.rows.get().unwrap().get(i as usize - 1).ok()
+    fn get_i8(&self, i: u64) -> rdbc::Result<Option<i8>> {
+        unimplemented!()
     }
 
-    fn get_string(&self, i: u64) -> Option<String> {
-        self.rows.get().unwrap().get(i as usize - 1).ok()
+    fn get_i16(&self, i: u64) -> rdbc::Result<Option<i16>> {
+        unimplemented!()
+    }
+
+    fn get_i32(&self, i: u64) -> rdbc::Result<Option<i32>> {
+        self.rows
+            .get()
+            .unwrap()
+            .get(i as usize)
+            .map_err(|e| to_rdbc_err(&e))
+    }
+
+    fn get_i64(&self, i: u64) -> rdbc::Result<Option<i64>> {
+        unimplemented!()
+    }
+
+    fn get_f32(&self, i: u64) -> rdbc::Result<Option<f32>> {
+        unimplemented!()
+    }
+
+    fn get_f64(&self, i: u64) -> rdbc::Result<Option<f64>> {
+        unimplemented!()
+    }
+
+    fn get_string(&self, i: u64) -> rdbc::Result<Option<String>> {
+        self.rows
+            .get()
+            .unwrap()
+            .get(i as usize)
+            .map_err(|e| to_rdbc_err(&e))
+    }
+
+    fn get_bytes(&self, i: u64) -> rdbc::Result<Option<Vec<u8>>> {
+        unimplemented!()
     }
 }
 
@@ -176,7 +208,7 @@ mod tests {
         assert_eq!(DataType::Integer, meta.column_type(1));
 
         assert!(rs.next());
-        assert_eq!(Some(123), rs.get_i32(1));
+        assert_eq!(Some(123), rs.get_i32(0).unwrap());
         assert!(!rs.next());
 
         Ok(())

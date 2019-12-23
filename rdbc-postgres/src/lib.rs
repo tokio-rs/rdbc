@@ -155,12 +155,36 @@ impl rdbc::ResultSet for PResultSet {
         }
     }
 
-    fn get_i32(&self, i: u64) -> Option<i32> {
-        self.rows.get(self.i - 1).get(i as usize - 1)
+    fn get_i8(&self, i: u64) -> rdbc::Result<Option<i8>> {
+        unimplemented!()
     }
 
-    fn get_string(&self, i: u64) -> Option<String> {
-        self.rows.get(self.i - 1).get(i as usize - 1)
+    fn get_i16(&self, i: u64) -> rdbc::Result<Option<i16>> {
+        unimplemented!()
+    }
+
+    fn get_i32(&self, i: u64) -> rdbc::Result<Option<i32>> {
+        Ok(self.rows.get(self.i - 1).get(i as usize))
+    }
+
+    fn get_i64(&self, i: u64) -> rdbc::Result<Option<i64>> {
+        unimplemented!()
+    }
+
+    fn get_f32(&self, i: u64) -> rdbc::Result<Option<f32>> {
+        unimplemented!()
+    }
+
+    fn get_f64(&self, i: u64) -> rdbc::Result<Option<f64>> {
+        unimplemented!()
+    }
+
+    fn get_string(&self, i: u64) -> rdbc::Result<Option<String>> {
+        Ok(self.rows.get(self.i - 1).get(i as usize))
+    }
+
+    fn get_bytes(&self, i: u64) -> rdbc::Result<Option<Vec<u8>>> {
+        unimplemented!()
     }
 }
 
@@ -214,7 +238,7 @@ mod tests {
         let mut rs = rs.as_ref().borrow_mut();
 
         assert!(rs.next());
-        assert_eq!(Some(123), rs.get_i32(1));
+        assert_eq!(Some(123), rs.get_i32(0).unwrap());
         assert!(!rs.next());
 
         Ok(())

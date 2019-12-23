@@ -27,7 +27,6 @@ use mysql_common::constants::ColumnType;
 
 use rdbc;
 
-use rdbc::Error;
 use sqlparser::dialect::MySqlDialect;
 use sqlparser::tokenizer::{Token, Tokenizer, Word};
 
@@ -151,11 +150,17 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
     }
 
     fn get_i8(&self, i: u64) -> rdbc::Result<Option<i8>> {
-        unimplemented!()
+        match &self.row {
+            Some(Ok(row)) => Ok(row.get(i as usize)),
+            _ => Ok(None),
+        }
     }
 
     fn get_i16(&self, i: u64) -> rdbc::Result<Option<i16>> {
-        unimplemented!()
+        match &self.row {
+            Some(Ok(row)) => Ok(row.get(i as usize)),
+            _ => Ok(None),
+        }
     }
 
     fn get_i32(&self, i: u64) -> rdbc::Result<Option<i32>> {
@@ -166,15 +171,24 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
     }
 
     fn get_i64(&self, i: u64) -> rdbc::Result<Option<i64>> {
-        unimplemented!()
+        match &self.row {
+            Some(Ok(row)) => Ok(row.get(i as usize)),
+            _ => Ok(None),
+        }
     }
 
     fn get_f32(&self, i: u64) -> rdbc::Result<Option<f32>> {
-        unimplemented!()
+        match &self.row {
+            Some(Ok(row)) => Ok(row.get(i as usize)),
+            _ => Ok(None),
+        }
     }
 
     fn get_f64(&self, i: u64) -> rdbc::Result<Option<f64>> {
-        unimplemented!()
+        match &self.row {
+            Some(Ok(row)) => Ok(row.get(i as usize)),
+            _ => Ok(None),
+        }
     }
 
     fn get_string(&self, i: u64) -> rdbc::Result<Option<String>> {
@@ -185,7 +199,10 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
     }
 
     fn get_bytes(&self, i: u64) -> rdbc::Result<Option<Vec<u8>>> {
-        unimplemented!()
+        match &self.row {
+            Some(Ok(row)) => Ok(row.get(i as usize)),
+            _ => Ok(None),
+        }
     }
 }
 

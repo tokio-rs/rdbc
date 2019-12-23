@@ -118,11 +118,19 @@ impl<'stmt> rdbc::ResultSet for SResultSet<'stmt> {
     }
 
     fn get_i8(&self, i: u64) -> rdbc::Result<Option<i8>> {
-        unimplemented!()
+        self.rows
+            .get()
+            .unwrap()
+            .get(i as usize)
+            .map_err(|e| to_rdbc_err(&e))
     }
 
     fn get_i16(&self, i: u64) -> rdbc::Result<Option<i16>> {
-        unimplemented!()
+        self.rows
+            .get()
+            .unwrap()
+            .get(i as usize)
+            .map_err(|e| to_rdbc_err(&e))
     }
 
     fn get_i32(&self, i: u64) -> rdbc::Result<Option<i32>> {
@@ -134,15 +142,23 @@ impl<'stmt> rdbc::ResultSet for SResultSet<'stmt> {
     }
 
     fn get_i64(&self, i: u64) -> rdbc::Result<Option<i64>> {
-        unimplemented!()
+        self.rows
+            .get()
+            .unwrap()
+            .get(i as usize)
+            .map_err(|e| to_rdbc_err(&e))
     }
 
-    fn get_f32(&self, i: u64) -> rdbc::Result<Option<f32>> {
-        unimplemented!()
+    fn get_f32(&self, _i: u64) -> rdbc::Result<Option<f32>> {
+        Err(rdbc::Error::General("f32 not supported".to_owned()))
     }
 
     fn get_f64(&self, i: u64) -> rdbc::Result<Option<f64>> {
-        unimplemented!()
+        self.rows
+            .get()
+            .unwrap()
+            .get(i as usize)
+            .map_err(|e| to_rdbc_err(&e))
     }
 
     fn get_string(&self, i: u64) -> rdbc::Result<Option<String>> {
@@ -154,7 +170,11 @@ impl<'stmt> rdbc::ResultSet for SResultSet<'stmt> {
     }
 
     fn get_bytes(&self, i: u64) -> rdbc::Result<Option<Vec<u8>>> {
-        unimplemented!()
+        self.rows
+            .get()
+            .unwrap()
+            .get(i as usize)
+            .map_err(|e| to_rdbc_err(&e))
     }
 }
 

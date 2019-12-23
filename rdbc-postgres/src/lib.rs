@@ -156,11 +156,11 @@ impl rdbc::ResultSet for PResultSet {
     }
 
     fn get_i8(&self, i: u64) -> rdbc::Result<Option<i8>> {
-        unimplemented!()
+        Ok(self.rows.get(self.i - 1).get(i as usize))
     }
 
     fn get_i16(&self, i: u64) -> rdbc::Result<Option<i16>> {
-        unimplemented!()
+        Ok(self.rows.get(self.i - 1).get(i as usize))
     }
 
     fn get_i32(&self, i: u64) -> rdbc::Result<Option<i32>> {
@@ -168,15 +168,15 @@ impl rdbc::ResultSet for PResultSet {
     }
 
     fn get_i64(&self, i: u64) -> rdbc::Result<Option<i64>> {
-        unimplemented!()
+        Ok(self.rows.get(self.i - 1).get(i as usize))
     }
 
     fn get_f32(&self, i: u64) -> rdbc::Result<Option<f32>> {
-        unimplemented!()
+        Ok(self.rows.get(self.i - 1).get(i as usize))
     }
 
     fn get_f64(&self, i: u64) -> rdbc::Result<Option<f64>> {
-        unimplemented!()
+        Ok(self.rows.get(self.i - 1).get(i as usize))
     }
 
     fn get_string(&self, i: u64) -> rdbc::Result<Option<String>> {
@@ -184,7 +184,7 @@ impl rdbc::ResultSet for PResultSet {
     }
 
     fn get_bytes(&self, i: u64) -> rdbc::Result<Option<Vec<u8>>> {
-        unimplemented!()
+        Ok(self.rows.get(self.i - 1).get(i as usize))
     }
 }
 

@@ -41,8 +41,10 @@ impl MySQLDriver {
     pub fn new() -> Self {
         MySQLDriver {}
     }
+}
 
-    pub fn connect(&self, url: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection + 'static>>> {
+impl rdbc::Driver for MySQLDriver {
+    fn connect(&self, url: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection + 'static>>> {
         let opts = my::Opts::from_url(&url).expect("DATABASE_URL invalid");
         my::Conn::new(opts)
             .map_err(|e| to_rdbc_err(&e))
@@ -167,7 +169,7 @@ fn to_rdbc_type(t: &ColumnType) -> rdbc::DataType {
         ColumnType::MYSQL_TYPE_FLOAT => rdbc::DataType::Float,
         ColumnType::MYSQL_TYPE_DOUBLE => rdbc::DataType::Double,
         //TODO all types
-        _ => rdbc::DataType::Varchar,
+        _ => rdbc::DataType::Utf8,
     }
 }
 
@@ -220,6 +222,7 @@ fn rewrite(sql: &str, params: &[rdbc::Value]) -> String {
 mod tests {
 
     use super::*;
+    use std::sync::Arc;
 
     #[test]
     fn execute_query() -> rdbc::Result<()> {
@@ -230,7 +233,7 @@ mod tests {
             &vec![rdbc::Value::Int32(123)],
         )?;
 
-        let driver = MySQLDriver::new();
+        let driver: Arc<dyn rdbc::Driver> = Arc::new(MySQLDriver::new());
         let conn = driver.connect("mysql://root:secret@127.0.0.1:3307/mysql")?;
         let mut conn = conn.as_ref().borrow_mut();
         let stmt = conn.prepare("SELECT a FROM test")?;
@@ -248,7 +251,7 @@ mod tests {
 
     fn execute(sql: &str, values: &Vec<rdbc::Value>) -> rdbc::Result<u64> {
         println!("Executing '{}' with {} params", sql, values.len());
-        let driver = MySQLDriver::new();
+        let driver: Arc<dyn rdbc::Driver> = Arc::new(MySQLDriver::new());
         let conn = driver.connect("mysql://root:secret@127.0.0.1:3307/mysql")?;
         let mut conn = conn.as_ref().borrow_mut();
         let stmt = conn.create(sql)?;

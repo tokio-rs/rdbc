@@ -32,17 +32,13 @@ fn main() -> Result<()> {
     let url = matches.value_of("connection-url").unwrap();
     println!("Connecting to {} driver with url: {}", driver, url);
 
-    let conn = match driver {
-        "mysql" => {
-            let driver = MySQLDriver::new();
-            driver.connect(url)
-        }
-        "postgres" => {
-            let driver = PostgresDriver::new();
-            driver.connect(url)
-        }
+    let driver = match driver {
+        "mysql" => Rc::new(MySQLDriver::new()) as Rc<dyn rdbc::Driver>,
+        "postgres" => Rc::new(PostgresDriver::new()) as Rc<dyn rdbc::Driver>,
         _ => panic!("Invalid driver"),
-    }?;
+    };
+
+    let conn = driver.connect(url).unwrap();
 
     let mut rl = Editor::<()>::new();
     rl.load_history(".history").ok();
@@ -101,7 +97,7 @@ fn execute(conn: Rc<RefCell<dyn Connection>>, sql: &str) -> Result<()> {
             }
             let col_index = i + 1;
             match meta.column_type(col_index) {
-                DataType::Varchar => print!("{:?}", rs.get_string(col_index)),
+                DataType::Utf8 => print!("{:?}", rs.get_string(col_index)),
                 DataType::Integer => print!("{:?}", rs.get_i32(col_index)),
                 // TODO other types
                 _ => print!("{:?}", rs.get_string(col_index)),

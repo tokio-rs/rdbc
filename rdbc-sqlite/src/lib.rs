@@ -5,10 +5,11 @@
 //! The RDBC (Rust DataBase Connectivity) API is loosely based on the ODBC and JDBC standards.
 //!
 //! ```rust
-//! use rdbc::Value;
+//! use std::sync::Arc;
+//! use rdbc::{self, Value};
 //! use rdbc_sqlite::SqliteDriver;
-//! let driver = SqliteDriver::new();
-//! let conn = driver.connect_in_memory().unwrap();
+//! let driver: Arc<dyn rdbc::Driver> = Arc::new(SqliteDriver::new());
+//! let conn = driver.connect("").unwrap();
 //! let mut conn = conn.borrow_mut();
 //! let stmt = conn.prepare("CREATE TABLE test (a INT NOT NULL)").unwrap().borrow_mut().execute_update(&vec![]).unwrap();
 //! let stmt = conn.prepare("INSERT INTO test (a) VALUES (?)").unwrap().borrow_mut().execute_update(&vec![rdbc::Value::Int32(123)]).unwrap();
@@ -37,8 +38,10 @@ impl SqliteDriver {
     pub fn new() -> Self {
         SqliteDriver {}
     }
+}
 
-    pub fn connect_in_memory(&self) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection>>> {
+impl rdbc::Driver for SqliteDriver {
+    fn connect(&self, _url: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection + 'static>>> {
         rusqlite::Connection::open_in_memory()
             .map_err(|e| to_rdbc_err(&e))
             .map(|c| {
@@ -127,7 +130,7 @@ fn to_rdbc_type(t: Option<&str>) -> rdbc::DataType {
     //TODO implement for real
     match t {
         Some("INT") => rdbc::DataType::Integer,
-        _ => rdbc::DataType::Varchar,
+        _ => rdbc::DataType::Utf8,
     }
 }
 
@@ -145,11 +148,13 @@ fn to_sqlite_value(values: &[rdbc::Value]) -> Vec<Box<dyn rusqlite::types::ToSql
 mod tests {
     use super::*;
     use rdbc::{Connection, DataType};
+    use std::sync::Arc;
 
     #[test]
     fn execute_query() -> rdbc::Result<()> {
-        let driver = SqliteDriver::new();
-        let mut conn = driver.connect_in_memory()?;
+        let driver: Arc<dyn rdbc::Driver> = Arc::new(SqliteDriver::new());
+        let url = "";
+        let mut conn = driver.connect(url)?;
         execute(&mut conn, "DROP TABLE IF EXISTS test", &vec![])?;
         execute(&mut conn, "CREATE TABLE test (a INT NOT NULL)", &vec![])?;
         execute(

@@ -51,6 +51,10 @@ impl ToString for Value {
 /// RDBC Result type
 pub type Result<T> = std::result::Result<T, Error>;
 
+pub trait Driver<'a,'b>: Sync + Send {
+    fn connect(&'a self, url: &'b str) -> Result<Rc<RefCell<dyn Connection + 'a>>>;
+}
+
 /// Represents a connection to a database
 pub trait Connection {
     /// Create a statement for execution
@@ -91,17 +95,19 @@ pub trait ResultSetMetaData {
 /// RDBC Data Types
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum DataType {
-    Varchar,
+    Bool,
+    Byte,
+    Char,
+    Short,
     Integer,
     Float,
     Double,
-    Bool,
+    Decimal,
     Date,
     Time,
     Datetime,
-    Decimal,
-    Blob,
-    Clob,
+    Utf8,
+    Binary,
     //TODO: add more types and research ODBC and JDBC types
 }
 

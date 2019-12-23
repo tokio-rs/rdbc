@@ -37,8 +37,11 @@ impl SqliteDriver {
     pub fn new() -> Self {
         SqliteDriver {}
     }
+}
 
-    pub fn connect_in_memory(&self) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection>>> {
+impl<'a,'b> rdbc::Driver<'a,'b> for SqliteDriver {
+
+    fn connect(&'a self, _url: &'b str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection + 'a>>> {
         rusqlite::Connection::open_in_memory()
             .map_err(|e| to_rdbc_err(&e))
             .map(|c| {
@@ -127,7 +130,7 @@ fn to_rdbc_type(t: Option<&str>) -> rdbc::DataType {
     //TODO implement for real
     match t {
         Some("INT") => rdbc::DataType::Integer,
-        _ => rdbc::DataType::Varchar,
+        _ => rdbc::DataType::Utf8,
     }
 }
 
@@ -144,12 +147,13 @@ fn to_sqlite_value(values: &[rdbc::Value]) -> Vec<Box<dyn rusqlite::types::ToSql
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Arc;
     use rdbc::{Connection, DataType};
 
     #[test]
     fn execute_query() -> rdbc::Result<()> {
-        let driver = SqliteDriver::new();
-        let mut conn = driver.connect_in_memory()?;
+        let driver: Arc<dyn rdbc::Driver> = Arc::new(SqliteDriver::new());
+        let mut conn = driver.connect("")?;
         execute(&mut conn, "DROP TABLE IF EXISTS test", &vec![])?;
         execute(&mut conn, "CREATE TABLE test (a INT NOT NULL)", &vec![])?;
         execute(

@@ -39,8 +39,11 @@ impl PostgresDriver {
     pub fn new() -> Self {
         PostgresDriver {}
     }
+}
 
-    pub fn connect(&self, url: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection>>> {
+impl<'a,'b> rdbc::Driver <'a,'b>for PostgresDriver {
+
+    fn connect(&'a self, url: &'b str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection + 'a>>> {
         postgres::Connection::connect(url, TlsMode::None)
             .map_err(|e| to_rdbc_err(&e))
             .map(|c| {
@@ -171,7 +174,7 @@ fn to_rdbc_type(ty: &Type) -> rdbc::DataType {
     match ty.name() {
         "" => rdbc::DataType::Bool,
         //TODO all types
-        _ => rdbc::DataType::Varchar,
+        _ => rdbc::DataType::Utf8,
     }
 }
 
@@ -191,6 +194,7 @@ fn to_postgres_value(values: &[rdbc::Value]) -> Vec<Box<dyn postgres::types::ToS
 mod tests {
 
     use super::*;
+    use std::sync::Arc;
 
     #[test]
     fn execute_query() -> rdbc::Result<()> {
@@ -201,7 +205,7 @@ mod tests {
             &vec![rdbc::Value::Int32(123)],
         )?;
 
-        let driver = PostgresDriver::new();
+        let driver: Arc<dyn rdbc::Driver> = Arc::new(PostgresDriver::new());
         let conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433")?;
         let mut conn = conn.as_ref().borrow_mut();
         let stmt = conn.prepare("SELECT a FROM test")?;
@@ -219,7 +223,7 @@ mod tests {
 
     fn execute(sql: &str, values: &Vec<rdbc::Value>) -> rdbc::Result<u64> {
         println!("Executing '{}' with {} params", sql, values.len());
-        let driver = PostgresDriver::new();
+        let driver: Arc<dyn rdbc::Driver> = Arc::new(PostgresDriver::new());
         let conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433")?;
         let mut conn = conn.as_ref().borrow_mut();
         let stmt = conn.prepare(sql)?;

@@ -32,7 +32,7 @@ use sqlparser::tokenizer::{Token, Tokenizer, Word};
 
 /// Convert a MySQL error into an RDBC error
 fn to_rdbc_err(e: &my::error::Error) -> rdbc::Error {
-    rdbc::Error::General(format!("{:?}", e))
+    rdbc::Error::General(e.to_string())
 }
 
 pub struct MySQLDriver {}
@@ -155,56 +155,64 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
 
     fn get_i8(&self, i: u64) -> rdbc::Result<Option<i8>> {
         match &self.row {
-            Some(Ok(row)) => Ok(row.get(i as usize)),
+            Some(Ok(row)) => Ok(row.get::<Option<i8>, usize>(i as usize)
+                .expect("we will never `take` the value so the outer `Option` is always `Some`")),
             _ => Ok(None),
         }
     }
 
     fn get_i16(&self, i: u64) -> rdbc::Result<Option<i16>> {
         match &self.row {
-            Some(Ok(row)) => Ok(row.get(i as usize)),
+            Some(Ok(row)) => Ok(row.get::<Option<i16>, usize>(i as usize)
+                .expect("we will never `take` the value so the outer `Option` is always `Some`")),
             _ => Ok(None),
         }
     }
 
     fn get_i32(&self, i: u64) -> rdbc::Result<Option<i32>> {
         match &self.row {
-            Some(Ok(row)) => Ok(row.get(i as usize)),
+            Some(Ok(row)) => Ok(row.get::<Option<i32>, usize>(i as usize)
+                .expect("we will never `take` the value so the outer `Option` is always `Some`")),
             _ => Ok(None),
         }
     }
 
     fn get_i64(&self, i: u64) -> rdbc::Result<Option<i64>> {
         match &self.row {
-            Some(Ok(row)) => Ok(row.get(i as usize)),
+            Some(Ok(row)) => Ok(row.get::<Option<i64>, usize>(i as usize)
+                .expect("we will never `take` the value so the outer `Option` is always `Some`")),
             _ => Ok(None),
         }
     }
 
     fn get_f32(&self, i: u64) -> rdbc::Result<Option<f32>> {
         match &self.row {
-            Some(Ok(row)) => Ok(row.get(i as usize)),
+            Some(Ok(row)) => Ok(row.get::<Option<f32>, usize>(i as usize)
+                .expect("we will never `take` the value so the outer `Option` is always `Some`")),
             _ => Ok(None),
         }
     }
 
     fn get_f64(&self, i: u64) -> rdbc::Result<Option<f64>> {
         match &self.row {
-            Some(Ok(row)) => Ok(row.get(i as usize)),
+            Some(Ok(row)) => Ok(row.get::<Option<f64>, usize>(i as usize)
+                .expect("we will never `take` the value so the outer `Option` is always `Some`")),
             _ => Ok(None),
         }
     }
 
     fn get_string(&self, i: u64) -> rdbc::Result<Option<String>> {
         match &self.row {
-            Some(Ok(row)) => Ok(row.get(i as usize)),
+            Some(Ok(row)) => Ok(row.get::<Option<String>, usize>(i as usize)
+                .expect("we will never `take` the value so the outer `Option` is always `Some`")),
             _ => Ok(None),
         }
     }
 
     fn get_bytes(&self, i: u64) -> rdbc::Result<Option<Vec<u8>>> {
         match &self.row {
-            Some(Ok(row)) => Ok(row.get(i as usize)),
+            Some(Ok(row)) => Ok(row.get::<Option<Vec<u8>>, usize>(i as usize)
+                .expect("we will never `take` the value so the outer `Option` is always `Some`")),
             _ => Ok(None),
         }
     }
@@ -214,8 +222,25 @@ fn to_rdbc_type(t: &ColumnType) -> rdbc::DataType {
     match t {
         ColumnType::MYSQL_TYPE_FLOAT => rdbc::DataType::Float,
         ColumnType::MYSQL_TYPE_DOUBLE => rdbc::DataType::Double,
-        //TODO all types
-        _ => rdbc::DataType::Utf8,
+        ColumnType::MYSQL_TYPE_TINY => rdbc::DataType::Byte,
+        ColumnType::MYSQL_TYPE_SHORT => rdbc::DataType::Short,
+        ColumnType::MYSQL_TYPE_LONG => rdbc::DataType::Integer,
+        ColumnType::MYSQL_TYPE_LONGLONG => rdbc::DataType::Integer, // TODO: 64-bit integer type?
+        ColumnType::MYSQL_TYPE_DECIMAL => rdbc::DataType::Decimal,
+        ColumnType::MYSQL_TYPE_NEWDECIMAL => rdbc::DataType::Decimal,
+        ColumnType::MYSQL_TYPE_STRING => rdbc::DataType::Utf8,
+        ColumnType::MYSQL_TYPE_VAR_STRING => rdbc::DataType::Utf8,
+        ColumnType::MYSQL_TYPE_VARCHAR => rdbc::DataType::Utf8,
+        ColumnType::MYSQL_TYPE_TINY_BLOB => rdbc::DataType::Binary,
+        ColumnType::MYSQL_TYPE_MEDIUM_BLOB => rdbc::DataType::Binary,
+        ColumnType::MYSQL_TYPE_LONG_BLOB => rdbc::DataType::Binary,
+        ColumnType::MYSQL_TYPE_BLOB => rdbc::DataType::Binary,
+        ColumnType::MYSQL_TYPE_BIT => rdbc::DataType::Bool,
+        ColumnType::MYSQL_TYPE_DATE => rdbc::DataType::Date,
+        ColumnType::MYSQL_TYPE_TIME => rdbc::DataType::Time,
+        ColumnType::MYSQL_TYPE_TIMESTAMP => rdbc::DataType::Datetime, // TODO: Data type for timestamps in UTC?
+        ColumnType::MYSQL_TYPE_DATETIME => rdbc::DataType::Datetime,
+        mysql_datatype => todo!("Datatype not currently supported: {:?}", mysql_datatype),
     }
 }
 

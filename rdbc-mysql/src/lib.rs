@@ -155,7 +155,8 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
 
     fn get_i8(&self, i: u64) -> rdbc::Result<Option<i8>> {
         match &self.row {
-            Some(Ok(row)) => Ok(row.get::<Option<i8>, usize>(i as usize)
+            Some(Ok(row)) => Ok(row
+                .get::<Option<i8>, usize>(i as usize)
                 .expect("we will never `take` the value so the outer `Option` is always `Some`")),
             _ => Ok(None),
         }
@@ -163,7 +164,8 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
 
     fn get_i16(&self, i: u64) -> rdbc::Result<Option<i16>> {
         match &self.row {
-            Some(Ok(row)) => Ok(row.get::<Option<i16>, usize>(i as usize)
+            Some(Ok(row)) => Ok(row
+                .get::<Option<i16>, usize>(i as usize)
                 .expect("we will never `take` the value so the outer `Option` is always `Some`")),
             _ => Ok(None),
         }
@@ -171,7 +173,8 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
 
     fn get_i32(&self, i: u64) -> rdbc::Result<Option<i32>> {
         match &self.row {
-            Some(Ok(row)) => Ok(row.get::<Option<i32>, usize>(i as usize)
+            Some(Ok(row)) => Ok(row
+                .get::<Option<i32>, usize>(i as usize)
                 .expect("we will never `take` the value so the outer `Option` is always `Some`")),
             _ => Ok(None),
         }
@@ -179,7 +182,8 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
 
     fn get_i64(&self, i: u64) -> rdbc::Result<Option<i64>> {
         match &self.row {
-            Some(Ok(row)) => Ok(row.get::<Option<i64>, usize>(i as usize)
+            Some(Ok(row)) => Ok(row
+                .get::<Option<i64>, usize>(i as usize)
                 .expect("we will never `take` the value so the outer `Option` is always `Some`")),
             _ => Ok(None),
         }
@@ -187,7 +191,8 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
 
     fn get_f32(&self, i: u64) -> rdbc::Result<Option<f32>> {
         match &self.row {
-            Some(Ok(row)) => Ok(row.get::<Option<f32>, usize>(i as usize)
+            Some(Ok(row)) => Ok(row
+                .get::<Option<f32>, usize>(i as usize)
                 .expect("we will never `take` the value so the outer `Option` is always `Some`")),
             _ => Ok(None),
         }
@@ -195,7 +200,8 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
 
     fn get_f64(&self, i: u64) -> rdbc::Result<Option<f64>> {
         match &self.row {
-            Some(Ok(row)) => Ok(row.get::<Option<f64>, usize>(i as usize)
+            Some(Ok(row)) => Ok(row
+                .get::<Option<f64>, usize>(i as usize)
                 .expect("we will never `take` the value so the outer `Option` is always `Some`")),
             _ => Ok(None),
         }
@@ -203,7 +209,8 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
 
     fn get_string(&self, i: u64) -> rdbc::Result<Option<String>> {
         match &self.row {
-            Some(Ok(row)) => Ok(row.get::<Option<String>, usize>(i as usize)
+            Some(Ok(row)) => Ok(row
+                .get::<Option<String>, usize>(i as usize)
                 .expect("we will never `take` the value so the outer `Option` is always `Some`")),
             _ => Ok(None),
         }
@@ -211,7 +218,8 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
 
     fn get_bytes(&self, i: u64) -> rdbc::Result<Option<Vec<u8>>> {
         match &self.row {
-            Some(Ok(row)) => Ok(row.get::<Option<Vec<u8>>, usize>(i as usize)
+            Some(Ok(row)) => Ok(row
+                .get::<Option<Vec<u8>>, usize>(i as usize)
                 .expect("we will never `take` the value so the outer `Option` is always `Some`")),
             _ => Ok(None),
         }

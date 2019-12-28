@@ -2,27 +2,22 @@
 //! and provides a database agnostic programming interface for executing queries and fetching
 //! results.
 //!
-//! Reference implementation RDBC Drivers exist for Postgres and MySQL.
+//! Reference implementation RDBC Drivers exist for Postgres, MySQL and SQLite.
 //!
 //! The following example demonstrates how RDBC can be used to run a trivial query against Postgres.
 //!
 //! ```rust,ignore
-//! use rdbc::Value;
+//! use rdbc::*;
 //! use rdbc_postgres::PostgresDriver;
+//!
 //! let driver = PostgresDriver::new();
-//! let conn = driver.connect("postgres://postgres:password@localhost:5433").unwrap();
-//! let mut conn = conn.borrow_mut();
-//! let stmt = conn.prepare("SELECT a FROM b WHERE c = ?").unwrap();
-//! let mut stmt = stmt.borrow_mut();
-//! let rs = stmt.execute_query(&vec![Value::Int32(123)]).unwrap();
-//! let mut rs = rs.borrow_mut();
+//! let mut conn = driver.connect("postgres://postgres:password@localhost:5433").unwrap();
+//! let mut stmt = conn.prepare("SELECT a FROM b WHERE c = ?").unwrap();
+//! let mut rs = stmt.execute_query(&[Value::Int32(123)]).unwrap();
 //! while rs.next() {
 //!   println!("{:?}", rs.get_string(1));
 //! }
 //! ```
-
-use std::cell::RefCell;
-use std::rc::Rc;
 
 /// RDBC Error
 #[derive(Debug)]
@@ -56,21 +51,23 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub trait Driver: Sync + Send {
     /// Create a connection to the database. Note that connections are intended to be used
     /// in a single thread since most database connections are not thread-safe
-    fn connect(&self, url: &str) -> Result<Rc<RefCell<dyn Connection + 'static>>>;
+    fn connect(&self, url: &str) -> Result<Box<dyn Connection>>;
 }
 
 /// Represents a connection to a database
 pub trait Connection {
     /// Create a statement for execution
-    fn create(&mut self, sql: &str) -> Result<Rc<RefCell<dyn Statement + '_>>>;
+    fn create(&mut self, sql: &str) -> Result<Box<dyn Statement + '_>>;
+
     /// Create a prepared statement for execution
-    fn prepare(&mut self, sql: &str) -> Result<Rc<RefCell<dyn Statement + '_>>>;
+    fn prepare(&mut self, sql: &str) -> Result<Box<dyn Statement + '_>>;
 }
 
 /// Represents an executable statement
 pub trait Statement {
     /// Execute a query that is expected to return a result set, such as a `SELECT` statement
-    fn execute_query(&mut self, params: &[Value]) -> Result<Rc<RefCell<dyn ResultSet + '_>>>;
+    fn execute_query(&mut self, params: &[Value]) -> Result<Box<dyn ResultSet + '_>>;
+
     /// Execute a query that is expected to update some rows.
     fn execute_update(&mut self, params: &[Value]) -> Result<u64>;
 }
@@ -78,7 +75,8 @@ pub trait Statement {
 /// Result set from executing a query against a statement
 pub trait ResultSet {
     /// get meta data about this result set
-    fn meta_data(&self) -> Result<Rc<dyn ResultSetMetaData>>;
+    fn meta_data(&self) -> Result<Box<dyn ResultSetMetaData>>;
+
     /// Move the cursor to the next available row if one exists and return true if it does
     fn next(&mut self) -> bool;
 

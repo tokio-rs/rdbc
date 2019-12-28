@@ -19,10 +19,6 @@
 //! }
 //! ```
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use postgres;
 use postgres::rows::Rows;
 use postgres::{Connection, TlsMode};
 
@@ -30,7 +26,6 @@ use sqlparser::dialect::PostgreSqlDialect;
 use sqlparser::tokenizer::{Token, Tokenizer, Word};
 
 use postgres::types::Type;
-use rdbc;
 use rdbc::Column;
 
 pub struct PostgresDriver {}
@@ -42,12 +37,9 @@ impl PostgresDriver {
 }
 
 impl rdbc::Driver for PostgresDriver {
-    fn connect(&self, url: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection + 'static>>> {
-        postgres::Connection::connect(url, TlsMode::None)
-            .map_err(|e| to_rdbc_err(&e))
-            .map(|c| {
-                Ok(Rc::new(RefCell::new(PConnection::new(c))) as Rc<RefCell<dyn rdbc::Connection>>)
-            })?
+    fn connect(&self, url: &str) -> rdbc::Result<Box<dyn rdbc::Connection>> {
+        let c = postgres::Connection::connect(url, TlsMode::None).map_err(to_rdbc_err)?;
+        Ok(Box::new(PConnection::new(c)))
     }
 }
 
@@ -62,11 +54,11 @@ impl PConnection {
 }
 
 impl rdbc::Connection for PConnection {
-    fn create(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
+    fn create(&mut self, sql: &str) -> rdbc::Result<Box<dyn rdbc::Statement + '_>> {
         self.prepare(sql)
     }
 
-    fn prepare(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
+    fn prepare(&mut self, sql: &str) -> rdbc::Result<Box<dyn rdbc::Statement + '_>> {
         // translate SQL, mapping ? into $1 style bound param placeholder
         let dialect = PostgreSqlDialect {};
         let mut tokenizer = Tokenizer::new(&dialect, sql);
@@ -92,10 +84,10 @@ impl rdbc::Connection for PConnection {
             .collect::<Vec<String>>()
             .join("");
 
-        Ok(Rc::new(RefCell::new(PStatement {
+        Ok(Box::new(PStatement {
             conn: &self.conn,
             sql,
-        })) as Rc<RefCell<dyn rdbc::Statement>>)
+        }))
     }
 }
 
@@ -108,22 +100,20 @@ impl<'a> rdbc::Statement for PStatement<'a> {
     fn execute_query(
         &mut self,
         params: &[rdbc::Value],
-    ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
+    ) -> rdbc::Result<Box<dyn rdbc::ResultSet + '_>> {
         let params = to_postgres_value(params);
         let params: Vec<&dyn postgres::types::ToSql> = params.iter().map(|v| v.as_ref()).collect();
-        self.conn
+        let rows = self
+            .conn
             .query(&self.sql, params.as_slice())
-            .map_err(|e| to_rdbc_err(&e))
-            .map(|rows| {
-                let meta = rows
-                    .columns()
-                    .iter()
-                    .map(|c| rdbc::Column::new(c.name(), to_rdbc_type(c.type_())))
-                    .collect();
+            .map_err(to_rdbc_err)?;
+        let meta = rows
+            .columns()
+            .iter()
+            .map(|c| rdbc::Column::new(c.name(), to_rdbc_type(c.type_())))
+            .collect();
 
-                Rc::new(RefCell::new(PResultSet { meta, i: 0, rows }))
-                    as Rc<RefCell<dyn rdbc::ResultSet>>
-            })
+        Ok(Box::new(PResultSet { meta, i: 0, rows }))
     }
 
     fn execute_update(&mut self, params: &[rdbc::Value]) -> rdbc::Result<u64> {
@@ -131,7 +121,7 @@ impl<'a> rdbc::Statement for PStatement<'a> {
         let params: Vec<&dyn postgres::types::ToSql> = params.iter().map(|v| v.as_ref()).collect();
         self.conn
             .execute(&self.sql, params.as_slice())
-            .map_err(|e| to_rdbc_err(&e))
+            .map_err(to_rdbc_err)
     }
 }
 
@@ -142,8 +132,8 @@ struct PResultSet {
 }
 
 impl rdbc::ResultSet for PResultSet {
-    fn meta_data(&self) -> rdbc::Result<Rc<dyn rdbc::ResultSetMetaData>> {
-        Ok(Rc::new(self.meta.clone()))
+    fn meta_data(&self) -> rdbc::Result<Box<dyn rdbc::ResultSetMetaData>> {
+        Ok(Box::new(self.meta.clone()))
     }
 
     fn next(&mut self) -> bool {
@@ -189,7 +179,7 @@ impl rdbc::ResultSet for PResultSet {
 }
 
 /// Convert a Postgres error into an RDBC error
-fn to_rdbc_err(e: &postgres::error::Error) -> rdbc::Error {
+fn to_rdbc_err(e: postgres::error::Error) -> rdbc::Error {
     rdbc::Error::General(format!("{:?}", e))
 }
 
@@ -229,13 +219,9 @@ mod tests {
         )?;
 
         let driver: Arc<dyn rdbc::Driver> = Arc::new(PostgresDriver::new());
-        let conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433")?;
-        let mut conn = conn.as_ref().borrow_mut();
-        let stmt = conn.prepare("SELECT a FROM test")?;
-        let mut stmt = stmt.borrow_mut();
-        let rs = stmt.execute_query(&vec![])?;
-
-        let mut rs = rs.as_ref().borrow_mut();
+        let mut conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433")?;
+        let mut stmt = conn.prepare("SELECT a FROM test")?;
+        let mut rs = stmt.execute_query(&vec![])?;
 
         assert!(rs.next());
         assert_eq!(Some(123), rs.get_i32(0)?);
@@ -247,10 +233,8 @@ mod tests {
     fn execute(sql: &str, values: &Vec<rdbc::Value>) -> rdbc::Result<u64> {
         println!("Executing '{}' with {} params", sql, values.len());
         let driver: Arc<dyn rdbc::Driver> = Arc::new(PostgresDriver::new());
-        let conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433")?;
-        let mut conn = conn.as_ref().borrow_mut();
-        let stmt = conn.prepare(sql)?;
-        let mut stmt = stmt.borrow_mut();
+        let mut conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433")?;
+        let mut stmt = conn.prepare(sql)?;
         stmt.execute_update(values)
     }
 }

@@ -21,9 +21,6 @@
 //! }
 //! ```
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
 /// RDBC Error
 #[derive(Debug)]
 pub enum Error {
@@ -56,21 +53,23 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub trait Driver: Sync + Send {
     /// Create a connection to the database. Note that connections are intended to be used
     /// in a single thread since most database connections are not thread-safe
-    fn connect(&self, url: &str) -> Result<Rc<RefCell<dyn Connection + 'static>>>;
+    fn connect(&self, url: &str) -> Result<Box<dyn Connection>>;
 }
 
 /// Represents a connection to a database
 pub trait Connection {
     /// Create a statement for execution
-    fn create(&mut self, sql: &str) -> Result<Rc<RefCell<dyn Statement + '_>>>;
+    fn create(&mut self, sql: &str) -> Result<Box<dyn Statement + '_>>;
+
     /// Create a prepared statement for execution
-    fn prepare(&mut self, sql: &str) -> Result<Rc<RefCell<dyn Statement + '_>>>;
+    fn prepare(&mut self, sql: &str) -> Result<Box<dyn Statement + '_>>;
 }
 
 /// Represents an executable statement
 pub trait Statement {
     /// Execute a query that is expected to return a result set, such as a `SELECT` statement
-    fn execute_query(&mut self, params: &[Value]) -> Result<Rc<RefCell<dyn ResultSet + '_>>>;
+    fn execute_query(&mut self, params: &[Value]) -> Result<Box<dyn ResultSet + '_>>;
+
     /// Execute a query that is expected to update some rows.
     fn execute_update(&mut self, params: &[Value]) -> Result<u64>;
 }
@@ -78,7 +77,8 @@ pub trait Statement {
 /// Result set from executing a query against a statement
 pub trait ResultSet {
     /// get meta data about this result set
-    fn meta_data(&self) -> Result<Rc<dyn ResultSetMetaData>>;
+    fn meta_data(&self) -> Result<Box<dyn ResultSetMetaData>>;
+
     /// Move the cursor to the next available row if one exists and return true if it does
     fn next(&mut self) -> bool;
 

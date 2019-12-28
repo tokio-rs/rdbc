@@ -19,19 +19,14 @@
 //! }
 //! ```
 
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use mysql as my;
 use mysql_common::constants::ColumnType;
-
-use rdbc;
 
 use sqlparser::dialect::MySqlDialect;
 use sqlparser::tokenizer::{Token, Tokenizer, Word};
 
 /// Convert a MySQL error into an RDBC error
-fn to_rdbc_err(e: &my::error::Error) -> rdbc::Error {
+fn to_rdbc_err(e: my::error::Error) -> rdbc::Error {
     rdbc::Error::General(e.to_string())
 }
 
@@ -44,13 +39,10 @@ impl MySQLDriver {
 }
 
 impl rdbc::Driver for MySQLDriver {
-    fn connect(&self, url: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Connection + 'static>>> {
+    fn connect(&self, url: &str) -> rdbc::Result<Box<dyn rdbc::Connection>> {
         let opts = my::Opts::from_url(&url).expect("DATABASE_URL invalid");
-        my::Conn::new(opts)
-            .map_err(|e| to_rdbc_err(&e))
-            .map(|conn| {
-                Rc::new(RefCell::new(MySQLConnection { conn })) as Rc<RefCell<dyn rdbc::Connection>>
-            })
+        let conn = my::Conn::new(opts).map_err(to_rdbc_err)?;
+        Ok(Box::new(MySQLConnection { conn }))
     }
 }
 
@@ -59,21 +51,16 @@ struct MySQLConnection {
 }
 
 impl rdbc::Connection for MySQLConnection {
-    fn create(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
-        Ok(Rc::new(RefCell::new(MySQLStatement {
+    fn create(&mut self, sql: &str) -> rdbc::Result<Box<dyn rdbc::Statement + '_>> {
+        Ok(Box::new(MySQLStatement {
             conn: &mut self.conn,
             sql: sql.to_owned(),
-        })) as Rc<RefCell<dyn rdbc::Statement>>)
+        }))
     }
 
-    fn prepare(&mut self, sql: &str) -> rdbc::Result<Rc<RefCell<dyn rdbc::Statement + '_>>> {
-        self.conn
-            .prepare(&sql)
-            .and_then(|stmt| {
-                Ok(Rc::new(RefCell::new(MySQLPreparedStatement { stmt }))
-                    as Rc<RefCell<dyn rdbc::Statement>>)
-            })
-            .map_err(|e| to_rdbc_err(&e))
+    fn prepare<'a>(&'a mut self, sql: &str) -> rdbc::Result<Box<dyn rdbc::Statement + '_>> {
+        let stmt = self.conn.prepare(&sql).map_err(to_rdbc_err)?;
+        Ok(Box::new(MySQLPreparedStatement { stmt }))
     }
 }
 
@@ -86,22 +73,17 @@ impl<'a> rdbc::Statement for MySQLStatement<'a> {
     fn execute_query(
         &mut self,
         params: &[rdbc::Value],
-    ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
+    ) -> rdbc::Result<Box<dyn rdbc::ResultSet + '_>> {
         let sql = rewrite(&self.sql, params)?;
-        self.conn
-            .query(&sql)
-            .map_err(|e| to_rdbc_err(&e))
-            .map(|result| {
-                Rc::new(RefCell::new(MySQLResultSet { result, row: None }))
-                    as Rc<RefCell<dyn rdbc::ResultSet>>
-            })
+        let result = self.conn.query(&sql).map_err(to_rdbc_err)?;
+        Ok(Box::new(MySQLResultSet { result, row: None }))
     }
 
     fn execute_update(&mut self, params: &[rdbc::Value]) -> rdbc::Result<u64> {
         let sql = rewrite(&self.sql, params)?;
         self.conn
             .query(&sql)
-            .map_err(|e| to_rdbc_err(&e))
+            .map_err(to_rdbc_err)
             .map(|result| result.affected_rows())
     }
 }
@@ -114,20 +96,19 @@ impl<'a> rdbc::Statement for MySQLPreparedStatement<'a> {
     fn execute_query(
         &mut self,
         params: &[rdbc::Value],
-    ) -> rdbc::Result<Rc<RefCell<dyn rdbc::ResultSet + '_>>> {
-        self.stmt
+    ) -> rdbc::Result<Box<dyn rdbc::ResultSet + '_>> {
+        let result = self
+            .stmt
             .execute(to_my_params(params))
-            .map_err(|e| to_rdbc_err(&e))
-            .map(|result| {
-                Rc::new(RefCell::new(MySQLResultSet { result, row: None }))
-                    as Rc<RefCell<dyn rdbc::ResultSet>>
-            })
+            .map_err(to_rdbc_err)?;
+
+        Ok(Box::new(MySQLResultSet { result, row: None }))
     }
 
     fn execute_update(&mut self, params: &[rdbc::Value]) -> rdbc::Result<u64> {
         self.stmt
             .execute(to_my_params(params))
-            .map_err(|e| to_rdbc_err(&e))
+            .map_err(to_rdbc_err)
             .map(|result| result.affected_rows())
     }
 }
@@ -138,14 +119,14 @@ pub struct MySQLResultSet<'a> {
 }
 
 impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
-    fn meta_data(&self) -> rdbc::Result<Rc<dyn rdbc::ResultSetMetaData>> {
+    fn meta_data(&self) -> rdbc::Result<Box<dyn rdbc::ResultSetMetaData>> {
         let meta: Vec<rdbc::Column> = self
             .result
             .columns_ref()
             .iter()
             .map(|c| rdbc::Column::new(&c.name_str(), to_rdbc_type(&c.column_type())))
             .collect();
-        Ok(Rc::new(meta))
+        Ok(Box::new(meta))
     }
 
     fn next(&mut self) -> bool {
@@ -317,14 +298,9 @@ mod tests {
         )?;
 
         let driver: Arc<dyn rdbc::Driver> = Arc::new(MySQLDriver::new());
-        let conn = driver.connect("mysql://root:secret@127.0.0.1:3307/mysql")?;
-        let mut conn = conn.as_ref().borrow_mut();
-        let stmt = conn.prepare("SELECT a FROM test")?;
-        let mut stmt = stmt.borrow_mut();
-        let rs = stmt.execute_query(&vec![])?;
-
-        let mut rs = rs.as_ref().borrow_mut();
-
+        let mut conn = driver.connect("mysql://root:secret@127.0.0.1:3307/mysql")?;
+        let mut stmt = conn.prepare("SELECT a FROM test")?;
+        let mut rs = stmt.execute_query(&vec![])?;
         assert!(rs.next());
         assert_eq!(Some(123), rs.get_i32(0)?);
         assert!(!rs.next());
@@ -335,10 +311,8 @@ mod tests {
     fn execute(sql: &str, values: &Vec<rdbc::Value>) -> rdbc::Result<u64> {
         println!("Executing '{}' with {} params", sql, values.len());
         let driver: Arc<dyn rdbc::Driver> = Arc::new(MySQLDriver::new());
-        let conn = driver.connect("mysql://root:secret@127.0.0.1:3307/mysql")?;
-        let mut conn = conn.as_ref().borrow_mut();
-        let stmt = conn.create(sql)?;
-        let mut stmt = stmt.borrow_mut();
+        let mut conn = driver.connect("mysql://root:secret@127.0.0.1:3307/mysql")?;
+        let mut stmt = conn.create(sql)?;
         stmt.execute_update(values)
     }
 }

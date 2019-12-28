@@ -1,6 +1,3 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use clap::{crate_version, App, Arg};
 use rustyline::Editor;
 
@@ -33,14 +30,14 @@ fn main() -> Result<()> {
     let url = matches.value_of("connection-url").unwrap();
     println!("Connecting to {} driver with url: {}", driver, url);
 
-    let driver = match driver {
-        "mysql" => Rc::new(MySQLDriver::new()) as Rc<dyn rdbc::Driver>,
-        "postgres" => Rc::new(PostgresDriver::new()) as Rc<dyn rdbc::Driver>,
-        "sqlite" => Rc::new(SqliteDriver::new()) as Rc<dyn rdbc::Driver>,
+    let driver: Box<dyn rdbc::Driver> = match driver {
+        "mysql" => Box::new(MySQLDriver::new()),
+        "postgres" => Box::new(PostgresDriver::new()),
+        "sqlite" => Box::new(SqliteDriver::new()),
         _ => panic!("Invalid driver"),
     };
 
-    let conn = driver.connect(url).unwrap();
+    let mut conn = driver.connect(url).unwrap();
 
     let mut rl = Editor::<()>::new();
     rl.load_history(".history").ok();
@@ -53,7 +50,7 @@ fn main() -> Result<()> {
                 query.push_str(line.trim_end());
                 rl.add_history_entry(query.clone());
 
-                match execute(conn.clone(), &query) {
+                match execute(&mut *conn, &query) {
                     Ok(_) => {}
                     Err(e) => println!("Error: {:?}", e),
                 }
@@ -75,13 +72,10 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn execute(conn: Rc<RefCell<dyn Connection>>, sql: &str) -> Result<()> {
+fn execute(conn: &mut dyn Connection, sql: &str) -> Result<()> {
     println!("Executing {}", sql);
-    let mut conn = conn.borrow_mut();
-    let stmt = conn.create(sql)?;
-    let mut stmt = stmt.borrow_mut();
-    let rs = stmt.execute_query(&vec![])?;
-    let mut rs = rs.borrow_mut();
+    let mut stmt = conn.create(sql)?;
+    let mut rs = stmt.execute_query(&vec![])?;
     let meta = rs.meta_data()?;
 
     for i in 0..meta.num_columns() {

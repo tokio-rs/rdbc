@@ -27,29 +27,32 @@ There is currently no `async` support but that will likely be addressed soon.
 pub trait Driver: Sync + Send {
     /// Create a connection to the database. Note that connections are intended to be used
     /// in a single thread since most database connections are not thread-safe
-    fn connect(&self, url: &str) -> Result<Rc<RefCell<dyn Connection + 'static>>>;
+    fn connect(&self, url: &str) -> Result<Box<dyn Connection>>;
 }
 
 /// Represents a connection to a database
 pub trait Connection {
     /// Create a statement for execution
-    fn create(&mut self, sql: &str) -> Result<Rc<RefCell<dyn Statement + '_>>>;
+    fn create(&mut self, sql: &str) -> Result<Box<dyn Statement + '_>>;
+
     /// Create a prepared statement for execution
-    fn prepare(&mut self, sql: &str) -> Result<Rc<RefCell<dyn Statement + '_>>>;
+    fn prepare(&mut self, sql: &str) -> Result<Box<dyn Statement + '_>>;
 }
 
 /// Represents an executable statement
 pub trait Statement {
     /// Execute a query that is expected to return a result set, such as a `SELECT` statement
-    fn execute_query(&mut self, params: &[Value]) -> Result<Rc<RefCell<dyn ResultSet + '_>>>;
+    fn execute_query(&mut self, params: &[Value]) -> Result<Box<dyn ResultSet + '_>>;
+
     /// Execute a query that is expected to update some rows.
     fn execute_update(&mut self, params: &[Value]) -> Result<u64>;
 }
 
 /// Result set from executing a query against a statement
 pub trait ResultSet {
-    // get meta data about this result set
-    fn meta_data(&self) -> Result<Rc<dyn ResultSetMetaData + '_>>;
+    /// get meta data about this result set
+    fn meta_data(&self) -> Result<Box<dyn ResultSetMetaData>>;
+
     /// Move the cursor to the next available row if one exists and return true if it does
     fn next(&mut self) -> bool;
 
@@ -73,35 +76,15 @@ pub trait ResultSetMetaData {
 
 # Examples
 
-## Create a Postgres Connection
-
-```rust
-fn connect_postgres() -> Result<Rc<RefCell<dyn Connection>>> {
-    let driver = PostgresDriver::new();
-    driver.connect("postgres://rdbc:secret@127.0.0.1:5433")
-}
-```
-
-## Create a MySQL Connection
-
-```rust
-fn connect_mysql() -> Result<Rc<RefCell<dyn Connection>>> {
-    let driver = MySQLDriver::new();
-    driver.connect("mysql://root:secret@127.0.0.1:3307")
-}
-```
-
 ## Execute a Query
 
 ```rust
-let conn = connect_postgres()?;
-let mut conn = conn.borrow_mut();
-let stmt = conn.prepare("SELECT a FROM b WHERE c = ?")?;
-let mut stmt = stmt.borrow_mut();
-let rs = stmt.execute_query(&vec![Value::Int32(123)])?;
-let mut rs = rs.borrow_mut();
+let driver: Arc<dyn rdbc::Driver> = Arc::new(PostgresDriver::new());
+let mut conn = driver.connect("postgres://user:password@127.0.0.1:5433")?;
+let mut stmt = conn.prepare("SELECT a FROM test")?;
+let mut rs = stmt.execute_query(&vec![])?;
 while rs.next() {
-  println!("{:?}", rs.get_string(1));
+  println!("{:?}", rs.get_string(1)?);
 }
 ```
 

@@ -30,6 +30,10 @@ fn to_rdbc_err(e: my::error::Error) -> rdbc::Error {
     rdbc::Error::General(e.to_string())
 }
 
+fn value_to_rdbc_err(e: my::FromValueError) -> rdbc::Error {
+    rdbc::Error::General(e.to_string())
+}
+
 pub struct MySQLDriver {}
 
 impl MySQLDriver {
@@ -118,6 +122,23 @@ pub struct MySQLResultSet<'a> {
     row: Option<my::Result<my::Row>>,
 }
 
+macro_rules! impl_resultset_fns {
+    ($($fn: ident -> $ty: ty),*) => {
+        $(
+            fn $fn(&self, i: u64) -> rdbc::Result<Option<$ty>> {
+                match &self.row {
+                    Some(Ok(row)) => row
+                        .get_opt(i as usize)
+                        .expect("we will never `take` the value so the outer `Option` is always `Some`")
+                        .map(|v| Some(v))
+                        .map_err(value_to_rdbc_err),
+                    _ => Ok(None),
+                }
+            }
+        )*
+    }
+}
+
 impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
     fn meta_data(&self) -> rdbc::Result<Box<dyn rdbc::ResultSetMetaData>> {
         let meta: Vec<rdbc::Column> = self
@@ -134,76 +155,15 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
         self.row.is_some()
     }
 
-    fn get_i8(&self, i: u64) -> rdbc::Result<Option<i8>> {
-        match &self.row {
-            Some(Ok(row)) => Ok(row
-                .get::<Option<i8>, usize>(i as usize)
-                .expect("we will never `take` the value so the outer `Option` is always `Some`")),
-            _ => Ok(None),
-        }
-    }
-
-    fn get_i16(&self, i: u64) -> rdbc::Result<Option<i16>> {
-        match &self.row {
-            Some(Ok(row)) => Ok(row
-                .get::<Option<i16>, usize>(i as usize)
-                .expect("we will never `take` the value so the outer `Option` is always `Some`")),
-            _ => Ok(None),
-        }
-    }
-
-    fn get_i32(&self, i: u64) -> rdbc::Result<Option<i32>> {
-        match &self.row {
-            Some(Ok(row)) => Ok(row
-                .get::<Option<i32>, usize>(i as usize)
-                .expect("we will never `take` the value so the outer `Option` is always `Some`")),
-            _ => Ok(None),
-        }
-    }
-
-    fn get_i64(&self, i: u64) -> rdbc::Result<Option<i64>> {
-        match &self.row {
-            Some(Ok(row)) => Ok(row
-                .get::<Option<i64>, usize>(i as usize)
-                .expect("we will never `take` the value so the outer `Option` is always `Some`")),
-            _ => Ok(None),
-        }
-    }
-
-    fn get_f32(&self, i: u64) -> rdbc::Result<Option<f32>> {
-        match &self.row {
-            Some(Ok(row)) => Ok(row
-                .get::<Option<f32>, usize>(i as usize)
-                .expect("we will never `take` the value so the outer `Option` is always `Some`")),
-            _ => Ok(None),
-        }
-    }
-
-    fn get_f64(&self, i: u64) -> rdbc::Result<Option<f64>> {
-        match &self.row {
-            Some(Ok(row)) => Ok(row
-                .get::<Option<f64>, usize>(i as usize)
-                .expect("we will never `take` the value so the outer `Option` is always `Some`")),
-            _ => Ok(None),
-        }
-    }
-
-    fn get_string(&self, i: u64) -> rdbc::Result<Option<String>> {
-        match &self.row {
-            Some(Ok(row)) => Ok(row
-                .get::<Option<String>, usize>(i as usize)
-                .expect("we will never `take` the value so the outer `Option` is always `Some`")),
-            _ => Ok(None),
-        }
-    }
-
-    fn get_bytes(&self, i: u64) -> rdbc::Result<Option<Vec<u8>>> {
-        match &self.row {
-            Some(Ok(row)) => Ok(row
-                .get::<Option<Vec<u8>>, usize>(i as usize)
-                .expect("we will never `take` the value so the outer `Option` is always `Some`")),
-            _ => Ok(None),
-        }
+    impl_resultset_fns! {
+        get_i8 -> i8,
+        get_i16 -> i16,
+        get_i32 -> i32,
+        get_i64 -> i64,
+        get_f32 -> f32,
+        get_f64 -> f64,
+        get_string -> String,
+        get_bytes -> Vec<u8>
     }
 }
 

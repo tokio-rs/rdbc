@@ -129,6 +129,16 @@ struct PResultSet {
     rows: Rows,
 }
 
+macro_rules! impl_resultset_fns {
+    ($($fn: ident -> $ty: ty),*) => {
+        $(
+            fn $fn(&self, i: u64) -> rdbc::Result<Option<$ty>> {
+                Ok(self.rows.get(self.i - 1).get(i as usize))
+            }
+        )*
+    }
+}
+
 impl rdbc::ResultSet for PResultSet {
     fn meta_data(&self) -> rdbc::Result<Box<dyn rdbc::ResultSetMetaData>> {
         Ok(Box::new(self.meta.clone()))
@@ -143,36 +153,15 @@ impl rdbc::ResultSet for PResultSet {
         }
     }
 
-    fn get_i8(&self, i: u64) -> rdbc::Result<Option<i8>> {
-        Ok(self.rows.get(self.i - 1).get(i as usize))
-    }
-
-    fn get_i16(&self, i: u64) -> rdbc::Result<Option<i16>> {
-        Ok(self.rows.get(self.i - 1).get(i as usize))
-    }
-
-    fn get_i32(&self, i: u64) -> rdbc::Result<Option<i32>> {
-        Ok(self.rows.get(self.i - 1).get(i as usize))
-    }
-
-    fn get_i64(&self, i: u64) -> rdbc::Result<Option<i64>> {
-        Ok(self.rows.get(self.i - 1).get(i as usize))
-    }
-
-    fn get_f32(&self, i: u64) -> rdbc::Result<Option<f32>> {
-        Ok(self.rows.get(self.i - 1).get(i as usize))
-    }
-
-    fn get_f64(&self, i: u64) -> rdbc::Result<Option<f64>> {
-        Ok(self.rows.get(self.i - 1).get(i as usize))
-    }
-
-    fn get_string(&self, i: u64) -> rdbc::Result<Option<String>> {
-        Ok(self.rows.get(self.i - 1).get(i as usize))
-    }
-
-    fn get_bytes(&self, i: u64) -> rdbc::Result<Option<Vec<u8>>> {
-        Ok(self.rows.get(self.i - 1).get(i as usize))
+    impl_resultset_fns! {
+        get_i8 -> i8,
+        get_i16 -> i16,
+        get_i32 -> i32,
+        get_i64 -> i64,
+        get_f32 -> f32,
+        get_f64 -> f64,
+        get_string -> String,
+        get_bytes -> Vec<u8>
     }
 }
 

@@ -88,6 +88,20 @@ impl<'a> rdbc::Statement for SStatement<'a> {
     }
 }
 
+macro_rules! impl_resultset_fns {
+    ($($fn: ident -> $ty: ty),*) => {
+        $(
+            fn $fn(&self, i: u64) -> rdbc::Result<Option<$ty>> {
+                self.rows
+                    .get()
+                    .unwrap()
+                    .get(i as usize)
+                    .map_err(to_rdbc_err)
+            }
+        )*
+    }
+}
+
 struct SResultSet<'stmt> {
     rows: Rows<'stmt>,
 }
@@ -108,64 +122,18 @@ impl<'stmt> rdbc::ResultSet for SResultSet<'stmt> {
         self.rows.next().unwrap().is_some()
     }
 
-    fn get_i8(&self, i: u64) -> rdbc::Result<Option<i8>> {
-        self.rows
-            .get()
-            .unwrap()
-            .get(i as usize)
-            .map_err(to_rdbc_err)
-    }
-
-    fn get_i16(&self, i: u64) -> rdbc::Result<Option<i16>> {
-        self.rows
-            .get()
-            .unwrap()
-            .get(i as usize)
-            .map_err(to_rdbc_err)
-    }
-
-    fn get_i32(&self, i: u64) -> rdbc::Result<Option<i32>> {
-        self.rows
-            .get()
-            .unwrap()
-            .get(i as usize)
-            .map_err(to_rdbc_err)
-    }
-
-    fn get_i64(&self, i: u64) -> rdbc::Result<Option<i64>> {
-        self.rows
-            .get()
-            .unwrap()
-            .get(i as usize)
-            .map_err(to_rdbc_err)
-    }
-
     fn get_f32(&self, _i: u64) -> rdbc::Result<Option<f32>> {
         Err(rdbc::Error::General("f32 not supported".to_owned()))
     }
 
-    fn get_f64(&self, i: u64) -> rdbc::Result<Option<f64>> {
-        self.rows
-            .get()
-            .unwrap()
-            .get(i as usize)
-            .map_err(to_rdbc_err)
-    }
-
-    fn get_string(&self, i: u64) -> rdbc::Result<Option<String>> {
-        self.rows
-            .get()
-            .unwrap()
-            .get(i as usize)
-            .map_err(to_rdbc_err)
-    }
-
-    fn get_bytes(&self, i: u64) -> rdbc::Result<Option<Vec<u8>>> {
-        self.rows
-            .get()
-            .unwrap()
-            .get(i as usize)
-            .map_err(to_rdbc_err)
+    impl_resultset_fns! {
+        get_i8 -> i8,
+        get_i16 -> i16,
+        get_i32 -> i32,
+        get_i64 -> i64,
+        get_f64 -> f64,
+        get_string -> String,
+        get_bytes -> Vec<u8>
     }
 }
 

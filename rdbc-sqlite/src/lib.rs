@@ -9,15 +9,13 @@
 //! use rdbc::{self, Value};
 //! use rdbc_sqlite::SqliteDriver;
 //! let driver: Arc<dyn rdbc::Driver> = Arc::new(SqliteDriver::new());
-//! let conn = driver.connect("").unwrap();
-//! let mut conn = conn.borrow_mut();
-//! let stmt = conn.prepare("CREATE TABLE test (a INT NOT NULL)").unwrap().borrow_mut().execute_update(&vec![]).unwrap();
-//! let stmt = conn.prepare("INSERT INTO test (a) VALUES (?)").unwrap().borrow_mut().execute_update(&vec![rdbc::Value::Int32(123)]).unwrap();
-//! let stmt = conn.prepare("SELECT a FROM test").unwrap();
-//! let mut stmt = stmt.borrow_mut();
-//! let rs = stmt.execute_query(&vec![]).unwrap();
-//! assert!(rs.as_ref().borrow_mut().next());
-//! assert_eq!(Some(123), rs.as_ref().borrow_mut().get_i32(0).unwrap());
+//! let mut conn = driver.connect("").unwrap();
+//! let stmt = conn.prepare("CREATE TABLE test (a INT NOT NULL)").unwrap().execute_update(&[]).unwrap();
+//! let stmt = conn.prepare("INSERT INTO test (a) VALUES (?)").unwrap().execute_update(&[rdbc::Value::Int32(123)]).unwrap();
+//! let mut stmt = conn.prepare("SELECT a FROM test").unwrap();
+//! let mut rs = stmt.execute_query(&[]).unwrap();
+//! assert!(rs.next());
+//! assert_eq!(Some(123), rs.get_i32(0).unwrap());
 //! ```
 
 use fallible_streaming_iterator::FallibleStreamingIterator;

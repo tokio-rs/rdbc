@@ -2,20 +2,18 @@
 //! and provides a database agnostic programming interface for executing queries and fetching
 //! results.
 //!
-//! Reference implementation RDBC Drivers exist for Postgres and MySQL.
+//! Reference implementation RDBC Drivers exist for Postgres, MySQL and SQLite.
 //!
 //! The following example demonstrates how RDBC can be used to run a trivial query against Postgres.
 //!
 //! ```rust,ignore
-//! use rdbc::Value;
+//! use rdbc::*;
 //! use rdbc_postgres::PostgresDriver;
+//!
 //! let driver = PostgresDriver::new();
-//! let conn = driver.connect("postgres://postgres:password@localhost:5433").unwrap();
-//! let mut conn = conn.borrow_mut();
-//! let stmt = conn.prepare("SELECT a FROM b WHERE c = ?").unwrap();
-//! let mut stmt = stmt.borrow_mut();
-//! let rs = stmt.execute_query(&vec![Value::Int32(123)]).unwrap();
-//! let mut rs = rs.borrow_mut();
+//! let mut conn = driver.connect("postgres://postgres:password@localhost:5433").unwrap();
+//! let mut stmt = conn.prepare("SELECT a FROM b WHERE c = ?").unwrap();
+//! let mut rs = stmt.execute_query(&[Value::Int32(123)]).unwrap();
 //! while rs.next() {
 //!   println!("{:?}", rs.get_string(1));
 //! }

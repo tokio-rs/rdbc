@@ -4,16 +4,14 @@
 //!
 //! The RDBC (Rust DataBase Connectivity) API is loosely based on the ODBC and JDBC standards.
 //!
-//! ```rust,ignore
-//! use rdbc::Value;
+//! ```rust,no_run
+//! use rdbc::*;
 //! use rdbc_postgres::PostgresDriver;
+//!
 //! let driver = PostgresDriver::new();
-//! let conn = driver.connect("postgres://postgres:password@localhost:5433").unwrap();
-//! let mut conn = conn.borrow_mut();
-//! let stmt = conn.prepare("SELECT a FROM b WHERE c = ?").unwrap();
-//! let mut stmt = stmt.borrow_mut();
-//! let rs = stmt.execute_query(&vec![Value::Int32(123)]).unwrap();
-//! let mut rs = rs.borrow_mut();
+//! let mut conn = driver.connect("postgres://postgres:password@localhost:5433").unwrap();
+//! let mut stmt = conn.prepare("SELECT a FROM b WHERE c = ?").unwrap();
+//! let mut rs = stmt.execute_query(&[Value::Int32(123)]).unwrap();
 //! while rs.next() {
 //!   println!("{:?}", rs.get_string(1));
 //! }

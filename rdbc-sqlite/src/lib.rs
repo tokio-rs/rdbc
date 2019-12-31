@@ -71,15 +71,13 @@ impl<'a> rdbc::Statement for SStatement<'a> {
         &mut self,
         params: &[rdbc::Value],
     ) -> rdbc::Result<Box<dyn rdbc::ResultSet + '_>> {
-        let params = to_sqlite_value(params);
-        let params: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|v| v.as_ref()).collect();
+        let params = Values(params);
         let rows = self.stmt.query(&params).map_err(to_rdbc_err)?;
         Ok(Box::new(SResultSet { rows }))
     }
 
     fn execute_update(&mut self, params: &[rdbc::Value]) -> rdbc::Result<u64> {
-        let params = to_sqlite_value(params);
-        let params: Vec<&dyn rusqlite::types::ToSql> = params.iter().map(|v| v.as_ref()).collect();
+        let params = Values(params);
         return self
             .stmt
             .execute(&params)
@@ -145,16 +143,29 @@ fn to_rdbc_type(t: Option<&str>) -> rdbc::DataType {
     }
 }
 
-fn to_sqlite_value(values: &[rdbc::Value]) -> Vec<Box<dyn rusqlite::types::ToSql>> {
-    values
-        .iter()
-        .map(|v| match v {
-            rdbc::Value::String(s) => Box::new(s.clone()) as Box<dyn rusqlite::types::ToSql>,
-            rdbc::Value::Int32(n) => Box::new(*n) as Box<dyn rusqlite::types::ToSql>,
-            rdbc::Value::UInt32(n) => Box::new(*n) as Box<dyn rusqlite::types::ToSql>,
-        })
-        .collect()
+struct Values<'a>(&'a [rdbc::Value]);
+struct ValuesIter<'a>(std::slice::Iter<'a, rdbc::Value>);
+
+impl<'a> IntoIterator for &'a Values<'a> {
+    type IntoIter = ValuesIter<'a>;
+    type Item = &'a dyn rusqlite::types::ToSql;
+
+    fn into_iter(self) -> ValuesIter<'a> {
+        ValuesIter(self.0.iter())
+    }
 }
+impl<'a> Iterator for ValuesIter<'a> {
+    type Item = &'a dyn rusqlite::types::ToSql;
+
+    fn next(&mut self) -> Option<&'a dyn rusqlite::types::ToSql> {
+        self.0.next().map(|v| match v {
+            rdbc::Value::String(ref s) => s as &dyn rusqlite::types::ToSql,
+            rdbc::Value::Int32(ref n) => n as &dyn rusqlite::types::ToSql,
+            rdbc::Value::UInt32(ref n) => n as &dyn rusqlite::types::ToSql,
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

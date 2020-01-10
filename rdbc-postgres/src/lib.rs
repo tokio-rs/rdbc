@@ -183,8 +183,6 @@ fn to_postgres_value(values: &[rdbc::Value]) -> Vec<Box<dyn postgres::types::ToS
         .iter()
         .map(|v| match v {
             rdbc::Value::String(s) => Box::new(s.clone()) as Box<dyn postgres::types::ToSql>,
-            rdbc::Value::Int32(n) => Box::new(*n) as Box<dyn postgres::types::ToSql>,
-            rdbc::Value::UInt32(n) => Box::new(*n) as Box<dyn postgres::types::ToSql>,
             //TODO all types
         })
         .collect()

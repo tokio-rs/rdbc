@@ -27,8 +27,6 @@ pub enum Error {
 
 #[derive(Debug, Clone)]
 pub enum Value {
-    Int32(i32),
-    UInt32(u32),
     String(String),
     //TODO add other types
 }
@@ -36,9 +34,7 @@ pub enum Value {
 impl ToString for Value {
     fn to_string(&self) -> String {
         match self {
-            Value::Int32(n) => format!("{}", n),
-            Value::UInt32(n) => format!("{}", n),
-            Value::String(s) => format!("'{}'", s),
+            Value::String(s) => format!("{}", s),
         }
     }
 }

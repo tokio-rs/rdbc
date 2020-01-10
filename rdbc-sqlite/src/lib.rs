@@ -160,8 +160,6 @@ impl<'a> Iterator for ValuesIter<'a> {
     fn next(&mut self) -> Option<&'a dyn rusqlite::types::ToSql> {
         self.0.next().map(|v| match v {
             rdbc::Value::String(ref s) => s as &dyn rusqlite::types::ToSql,
-            rdbc::Value::Int32(ref n) => n as &dyn rusqlite::types::ToSql,
-            rdbc::Value::UInt32(ref n) => n as &dyn rusqlite::types::ToSql,
         })
     }
 }

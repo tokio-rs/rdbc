@@ -105,6 +105,12 @@ The immediate priorities though are:
 - [ ] Implement RDBC-ODBC bridge
 - [ ] Implement dynamic loading of drivers at runtime
 
+
+# 原版改动（by zhuxiujia）
+* 所有驱动  fn to_my_value 修改为不添加 ''符号的原字符串，这样才能自定义 转义，兼容所有的数据库
+* 补全 postgres fn to_rdbc_type(ty: &Type) -> rdbc::DataType  反序列化类型
+* TODO 补全 sqlite反序列化类型
+
 # License
 
 RDBC is licensed under [Apache Licence, Version 2.0](/LICENSE).

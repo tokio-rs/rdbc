@@ -78,7 +78,16 @@ pub trait ResultSetMetaData {
 
 ## Execute a Query
 
+
 ```rust
+//first:add yaml 首先添加到你的Cargo.yaml
+#sql drivers
+rdbc = {git = "https://github.com/rbatis/rdbc",path="/rdbc"}
+rdbc-mysql = {git = "https://github.com/rbatis/rdbc",path="/rdbc-mysql"}
+rdbc-postgres = {git = "https://github.com/rbatis/rdbc",path="/rdbc-postgres"}
+```
+```rust
+//next:use it.第二步 使用
 let driver: Arc<dyn rdbc::Driver> = Arc::new(PostgresDriver::new());
 let mut conn = driver.connect("postgres://user:password@127.0.0.1:5433")?;
 let mut stmt = conn.prepare("SELECT a FROM test")?;

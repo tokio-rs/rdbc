@@ -3,10 +3,10 @@ name = "rdbc-odbc"
 description = "RDBC-ODBC Bridge"
 authors = ["Andy Grove <andygrove73@gmail.com>"]
 license = "Apache-2.0"
-version = "0.1.6"
+version = "1.0.0"
 edition = "2018"
 
 [dependencies]
-rdbc = { path = "../rdbc", version = "0.1.6" }
+rdbc = { path = "../rdbc", version = "1.0.0" }
 
 odbc = "0.16.1"

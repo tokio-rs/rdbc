@@ -170,34 +170,6 @@ mod tests {
     use rdbc::{Connection, DataType};
     use std::sync::Arc;
 
-    #[test]
-    fn execute_query() -> rdbc::Result<()> {
-        let driver: Arc<dyn rdbc::Driver> = Arc::new(SqliteDriver::new());
-        let url = "";
-        let mut conn = driver.connect(url)?;
-        execute(&mut *conn, "DROP TABLE IF EXISTS test", &vec![])?;
-        execute(&mut *conn, "CREATE TABLE test (a INT NOT NULL)", &vec![])?;
-        execute(
-            &mut *conn,
-            "INSERT INTO test (a) VALUES (?)",
-            &vec![rdbc::Value::Int32(123)],
-        )?;
-
-        let mut stmt = conn.prepare("SELECT a FROM test")?;
-        let mut rs = stmt.execute_query(&vec![])?;
-
-        let meta = rs.meta_data()?;
-        assert_eq!(1, meta.num_columns());
-        assert_eq!("a".to_owned(), meta.column_name(0));
-        assert_eq!(DataType::Integer, meta.column_type(0));
-
-        assert!(rs.next());
-        assert_eq!(Some(123), rs.get_i32(0)?);
-        assert!(!rs.next());
-
-        Ok(())
-    }
-
     fn execute(
         conn: &mut dyn Connection,
         sql: &str,

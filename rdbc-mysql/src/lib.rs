@@ -193,8 +193,6 @@ fn to_rdbc_type(t: &ColumnType) -> rdbc::DataType {
 
 fn to_my_value(v: &rdbc::Value) -> my::Value {
     match v {
-        rdbc::Value::Int32(n) => my::Value::Int(*n as i64),
-        rdbc::Value::UInt32(n) => my::Value::Int(*n as i64),
         rdbc::Value::String(s) => my::Value::from(s),
         //TODO all types
     }
@@ -246,25 +244,6 @@ mod tests {
     use super::*;
     use std::sync::Arc;
 
-    #[test]
-    fn execute_query() -> rdbc::Result<()> {
-        execute("DROP TABLE IF EXISTS test", &vec![])?;
-        execute("CREATE TABLE test (a INT NOT NULL)", &vec![])?;
-        execute(
-            "INSERT INTO test (a) VALUES (?)",
-            &vec![rdbc::Value::Int32(123)],
-        )?;
-
-        let driver: Arc<dyn rdbc::Driver> = Arc::new(MySQLDriver::new());
-        let mut conn = driver.connect("mysql://root:secret@127.0.0.1:3307/mysql")?;
-        let mut stmt = conn.prepare("SELECT a FROM test")?;
-        let mut rs = stmt.execute_query(&vec![])?;
-        assert!(rs.next());
-        assert_eq!(Some(123), rs.get_i32(0)?);
-        assert!(!rs.next());
-
-        Ok(())
-    }
 
     fn execute(sql: &str, values: &Vec<rdbc::Value>) -> rdbc::Result<u64> {
         println!("Executing '{}' with {} params", sql, values.len());

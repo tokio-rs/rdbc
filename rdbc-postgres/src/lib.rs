@@ -194,26 +194,6 @@ mod tests {
     use super::*;
     use std::sync::Arc;
 
-    #[test]
-    fn execute_query() -> rdbc::Result<()> {
-        execute("DROP TABLE IF EXISTS test", &vec![])?;
-        execute("CREATE TABLE test (a INT NOT NULL)", &vec![])?;
-        execute(
-            "INSERT INTO test (a) VALUES (?)",
-            &vec![rdbc::Value::Int32(123)],
-        )?;
-
-        let driver: Arc<dyn rdbc::Driver> = Arc::new(PostgresDriver::new());
-        let mut conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433")?;
-        let mut stmt = conn.prepare("SELECT a FROM test")?;
-        let mut rs = stmt.execute_query(&vec![])?;
-
-        assert!(rs.next());
-        assert_eq!(Some(123), rs.get_i32(0)?);
-        assert!(!rs.next());
-
-        Ok(())
-    }
 
     fn execute(sql: &str, values: &Vec<rdbc::Value>) -> rdbc::Result<u64> {
         println!("Executing '{}' with {} params", sql, values.len());

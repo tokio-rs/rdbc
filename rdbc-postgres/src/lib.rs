@@ -172,8 +172,28 @@ fn to_rdbc_err(e: postgres::error::Error) -> rdbc::Error {
 
 fn to_rdbc_type(ty: &Type) -> rdbc::DataType {
     match ty.name() {
-        "" => rdbc::DataType::Bool,
-        //TODO all types
+        "varchar" | "text" => rdbc::DataType::Utf8,
+
+        "bool" | "boolean" => rdbc::DataType::Bool,
+
+        "bytea" => rdbc::DataType::Byte,
+
+        "char" | "character" => rdbc::DataType::Char,
+
+        "int" | "int2" | "int4" | "int8" | "bigint" | "bigserial" | "serial8" => rdbc::DataType::Integer,
+
+        "real" | "float4" => rdbc::DataType::Float,
+
+        "float8" | "double precision" => rdbc::DataType::Double,
+
+        "numeric" | "decimal" => rdbc::DataType::Decimal,
+
+        "date" => rdbc::DataType::Date,
+
+        "time" | "timetz" => rdbc::DataType::Time,
+
+        "timestamp" | "timestamptz" => rdbc::DataType::Datetime,
+
         _ => rdbc::DataType::Utf8,
     }
 }
@@ -183,14 +203,12 @@ fn to_postgres_value(values: &[rdbc::Value]) -> Vec<Box<dyn postgres::types::ToS
         .iter()
         .map(|v| match v {
             rdbc::Value::String(s) => Box::new(s.clone()) as Box<dyn postgres::types::ToSql>,
-            //TODO all types
         })
         .collect()
 }
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use std::sync::Arc;
 

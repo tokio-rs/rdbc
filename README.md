@@ -15,11 +15,16 @@ Note that the provided RDBC drivers are just wrappers around existing database d
 
 This is filling a different need. I love the [Diesel](https://diesel.rs/) approach for building applications but if you are building a generic SQL tool, a business intelligence tool, or a distributed query engine, there is a need to connect to different databases and execute arbitrary SQL. This is where we need a standard API and available drivers.
 
-# RDBC API
+# RDBC API PoC
 
-Note that the design of the RDBC API is intentionally modeled directly after ODBC and JDBC (except that indices are 0-based rather than 1-based).
+Note that the design of the RDBC API is intentionally modeled directly after ODBC and JDBC (except that indices are 0-based rather than 1-based) and that is likely to change to make this more idiomatic for Rust.
 
-There is currently no `async` support but that will likely be addressed soon.
+There is currently no `async` support and that will be addressed soon.
+
+There are also design flaws with the current design, such as the limitation of only being able to create one prepared statement per connection.
+
+Work is in progress of the next iteration of this project and there will definitely be breaking changes.
+
 
 ```rust
 /// Represents database driver that can be shared between threads, and can therefore implement
@@ -64,6 +69,9 @@ pub trait ResultSet {
     fn get_f64(&self, i: u64) -> Result<Option<f64>>;
     fn get_string(&self, i: u64) -> Result<Option<String>>;
     fn get_bytes(&self, i: u64) -> Result<Option<Vec<u8>>>;
+
+    // NOTE that only a subset of data types are supported so far in this PoC
+    // and accessors need to be added for other types such as date and time
 }
 
 /// Meta data for result set

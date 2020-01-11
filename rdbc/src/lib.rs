@@ -19,8 +19,6 @@
 //! }
 //! ```
 
-use async_trait::async_trait;
-
 /// RDBC Error
 #[derive(Debug)]
 pub enum Error {
@@ -50,11 +48,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Represents database driver that can be shared between threads, and can therefore implement
 /// a connection pool
-#[async_trait]
 pub trait Driver: Sync + Send {
     /// Create a connection to the database. Note that connections are intended to be used
     /// in a single thread since most database connections are not thread-safe
-    async fn connect(&self, url: &str) -> Result<Box<dyn Connection>>;
+    fn connect(&self, url: &str) -> Result<Box<dyn Connection>>;
 }
 
 /// Represents a connection to a database

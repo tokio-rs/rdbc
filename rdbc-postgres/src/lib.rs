@@ -17,8 +17,6 @@
 //! }
 //! ```
 
-use async_trait::async_trait;
-
 use postgres::rows::Rows;
 use postgres::{Connection, TlsMode};
 
@@ -36,7 +34,6 @@ impl PostgresDriver {
     }
 }
 
-#[async_trait]
 impl rdbc::Driver for PostgresDriver {
     fn connect(&self, url: &str) -> rdbc::Result<Box<dyn rdbc::Connection>> {
         let c = postgres::Connection::connect(url, TlsMode::None).map_err(to_rdbc_err)?;
@@ -209,7 +206,7 @@ mod tests {
         )?;
 
         let driver: Arc<dyn rdbc::Driver> = Arc::new(PostgresDriver::new());
-        let mut conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433").await?;
+        let mut conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433")?;
         let mut stmt = conn.prepare("SELECT a FROM test")?;
         let mut rs = stmt.execute_query(&vec![])?;
 
@@ -223,7 +220,7 @@ mod tests {
     fn execute(sql: &str, values: &Vec<rdbc::Value>) -> rdbc::Result<u64> {
         println!("Executing '{}' with {} params", sql, values.len());
         let driver: Arc<dyn rdbc::Driver> = Arc::new(PostgresDriver::new());
-        let mut conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433").await?;
+        let mut conn = driver.connect("postgres://rdbc:secret@127.0.0.1:5433")?;
         let mut stmt = conn.prepare(sql)?;
         stmt.execute_update(values)
     }

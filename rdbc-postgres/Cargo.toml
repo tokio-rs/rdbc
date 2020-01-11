@@ -9,7 +9,6 @@ edition = "2018"
 
 [dependencies]
 rdbc = { path = "../rdbc", version = "0.1.6" }
-async-trait = "0.1.22"
-tokio-test = "0.2.0"
+
 postgres = "0.15.2"
 sqlparser = "0.5.0"

@@ -18,7 +18,6 @@
 //! assert_eq!(Some(123), rs.get_i32(0).unwrap());
 //! ```
 
-use async_trait::async_trait;
 use fallible_streaming_iterator::FallibleStreamingIterator;
 use rusqlite::Rows;
 
@@ -35,9 +34,8 @@ impl SqliteDriver {
     }
 }
 
-#[async_trait]
 impl rdbc::Driver for SqliteDriver {
-    async fn connect(&self, _url: &str) -> rdbc::Result<Box<dyn rdbc::Connection>> {
+    fn connect(&self, _url: &str) -> rdbc::Result<Box<dyn rdbc::Connection>> {
         let c = rusqlite::Connection::open_in_memory().map_err(to_rdbc_err)?;
         Ok(Box::new(SConnection::new(c)))
     }
@@ -174,11 +172,11 @@ mod tests {
     use rdbc::{Connection, DataType};
     use std::sync::Arc;
 
-    #[async_test]
+    #[test]
     fn execute_query() -> rdbc::Result<()> {
         let driver: Arc<dyn rdbc::Driver> = Arc::new(SqliteDriver::new());
         let url = "";
-        let mut conn = driver.connect(url).await?;
+        let mut conn = driver.connect(url)?;
         execute(&mut *conn, "DROP TABLE IF EXISTS test", &vec![])?;
         execute(&mut *conn, "CREATE TABLE test (a INT NOT NULL)", &vec![])?;
         execute(

@@ -100,6 +100,39 @@ pub trait ResultSetMetaData {
     fn column_type(&self, i: u64) -> DataType;
 }
 
+pub trait RowSet {
+    /// get meta data about this row set
+    fn meta_data(&self) -> Result<Box<dyn RowSetMetaData>>;
+
+    fn get_row(&self, i: u64) -> Result<Box<dyn Accessor>>;
+
+    fn get_column(&self, i: u64) -> Result<Box<dyn Accessor>>;
+
+    fn get_raw_column<T>(&self, i: u64) -> Result<Vec<T>>;
+}
+
+/// Meta data for a row set
+pub trait RowSetMetaData {
+    fn row_oriented(&self) -> bool;
+    fn num_rows(&self) -> u64;
+    fn num_columns(&self) -> u64;
+    fn column_name(&self, i: u64) -> String;
+    fn column_type(&self, i: u64) -> DataType;
+}
+
+/// Access individual data items by index within a row or column
+pub trait Accessor {
+    fn get_i8(&self, i: u64) -> Result<Option<i8>>;
+    fn get_i16(&self, i: u64) -> Result<Option<i16>>;
+    fn get_i32(&self, i: u64) -> Result<Option<i32>>;
+    fn get_i64(&self, i: u64) -> Result<Option<i64>>;
+    fn get_f32(&self, i: u64) -> Result<Option<f32>>;
+    fn get_f64(&self, i: u64) -> Result<Option<f64>>;
+    fn get_string(&self, i: u64) -> Result<Option<String>>;
+    fn get_bytes(&self, i: u64) -> Result<Option<Vec<u8>>>;
+    //TODO add other types such as date and time
+}
+
 /// RDBC Data Types
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum DataType {

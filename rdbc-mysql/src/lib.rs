@@ -17,6 +17,8 @@
 //! }
 //! ```
 
+use async_trait::async_trait;
+
 use mysql as my;
 use mysql_common::constants::ColumnType;
 
@@ -40,6 +42,7 @@ impl MySQLDriver {
     }
 }
 
+#[async_trait]
 impl rdbc::Driver for MySQLDriver {
     fn connect(&self, url: &str) -> rdbc::Result<Box<dyn rdbc::Connection>> {
         let opts = my::Opts::from_url(&url).expect("DATABASE_URL invalid");
@@ -246,7 +249,6 @@ mod tests {
     use super::*;
     use std::sync::Arc;
 
-    #[test]
     fn execute_query() -> rdbc::Result<()> {
         execute("DROP TABLE IF EXISTS test", &vec![])?;
         execute("CREATE TABLE test (a INT NOT NULL)", &vec![])?;
@@ -256,7 +258,7 @@ mod tests {
         )?;
 
         let driver: Arc<dyn rdbc::Driver> = Arc::new(MySQLDriver::new());
-        let mut conn = driver.connect("mysql://root:secret@127.0.0.1:3307/mysql")?;
+        let mut conn = driver.connect("mysql://root:secret@127.0.0.1:3307/mysql").await?;
         let mut stmt = conn.prepare("SELECT a FROM test")?;
         let mut rs = stmt.execute_query(&vec![])?;
         assert!(rs.next());
@@ -266,10 +268,10 @@ mod tests {
         Ok(())
     }
 
-    fn execute(sql: &str, values: &Vec<rdbc::Value>) -> rdbc::Result<u64> {
+    async fn execute(sql: &str, values: &Vec<rdbc::Value>) -> rdbc::Result<u64> {
         println!("Executing '{}' with {} params", sql, values.len());
         let driver: Arc<dyn rdbc::Driver> = Arc::new(MySQLDriver::new());
-        let mut conn = driver.connect("mysql://root:secret@127.0.0.1:3307/mysql")?;
+        let mut conn = driver.connect("mysql://root:secret@127.0.0.1:3307/mysql").await?;
         let mut stmt = conn.create(sql)?;
         stmt.execute_update(values)
     }

@@ -9,7 +9,8 @@ edition = "2018"
 
 [dependencies]
 rdbc = { path = "../rdbc", version = "0.1.6" }
-
+async-trait = "0.1.22"
+tokio-test = "0.2.0"
 mysql = "17.0.0"
 mysql_common = "0.19.2"
 twox-hash = "1.5.0"

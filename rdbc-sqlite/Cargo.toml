@@ -12,3 +12,5 @@ rdbc = { path = "../rdbc", version = "0.1.6" }
 
 rusqlite = { version = "0.21.0", features = ["bundled"]}
 fallible-streaming-iterator = "0.1"
+async-trait = "0.1.22"
+tokio-test = "0.2.0"

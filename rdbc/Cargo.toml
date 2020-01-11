@@ -7,3 +7,5 @@ license = "Apache-2.0"
 edition = "2018"
 
 [dependencies]
+async-trait = "0.1.22"
+

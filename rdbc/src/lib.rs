@@ -97,15 +97,37 @@ pub trait ResultSetMetaData {
     fn column_type(&self, i: u64) -> DataType;
 }
 
+/// RowSet represents a batch of rows and could be backed by either row-oriented or
+/// column-oriented data
 pub trait RowSet {
     /// get meta data about this row set
     fn meta_data(&self) -> Result<Box<dyn RowSetMetaData>>;
+    /// Get an accessor for a row containing mixed types
+    fn get_row(&self, i: u64) -> Result<Box<dyn RowAccessor>>;
+    /// Get a column as a type-safe accessor
+    fn get_column<T>(&self, i: u64) -> Result<Box<dyn ColumnAccessor<T>>>;
+}
 
-    fn get_row(&self, i: u64) -> Result<Box<dyn Accessor>>;
+struct MyRowSet {
 
-    fn get_column(&self, i: u64) -> Result<Box<dyn Accessor>>;
+}
 
-    fn get_raw_column<T>(&self, i: u64) -> Result<Vec<T>>;
+impl RowSet for MyRowSet {
+    fn meta_data(&self) -> Result<Box<dyn RowSetMetaData>> {
+        unimplemented!()
+    }
+
+    fn get_value<T>(&self, row: u64, column: u64) -> Result<Option<T>> {
+        unimplemented!()
+    }
+
+    fn get_column<T>(&self, i: u64) -> Result<Box<dyn ColumnAccessor<T>>> {
+        unimplemented!()
+    }
+
+    fn get_row(&self, i: u64) -> Result<Box<dyn RowAccessor>> {
+        unimplemented!()
+    }
 }
 
 /// Meta data for a row set
@@ -118,18 +140,37 @@ pub trait RowSetMetaData {
 }
 
 /// Access individual data items by index within a row or column
-pub trait Accessor {
-    fn get_i8(&self, i: u64) -> Result<Option<i8>>;
-    fn get_i16(&self, i: u64) -> Result<Option<i16>>;
-    fn get_i32(&self, i: u64) -> Result<Option<i32>>;
-    fn get_i64(&self, i: u64) -> Result<Option<i64>>;
-    fn get_f32(&self, i: u64) -> Result<Option<f32>>;
-    fn get_f64(&self, i: u64) -> Result<Option<f64>>;
-    fn get_string(&self, i: u64) -> Result<Option<String>>;
-    fn get_bytes(&self, i: u64) -> Result<Option<Vec<u8>>>;
-    //TODO add other types such as date and time
+pub trait RowAccessor {
+    fn get<T>(&self, i: u64) -> Result<Option<T>> where Self: Sized;
 }
 
+/// type-safe accessor for a columns's data values
+pub trait ColumnAccessor<T> {
+    fn get(&self, i: u64) -> Result<Option<T>>;
+}
+
+// mock impl
+
+struct MyRowAccessor {
+
+}
+
+impl RowAccessor for MyRowAccessor {
+    fn get<T>(&self, i: u64) -> Result<Option<T>> {
+        unimplemented!()
+    }
+}
+
+
+struct ExampleColumnAccessor {
+
+}
+
+impl<T> ColumnAccessor<T> for ExampleColumnAccessor {
+    fn get(&self, i: u64) -> Result<Option<T>> {
+        unimplemented!()
+    }
+}
 /// RDBC Data Types
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum DataType {

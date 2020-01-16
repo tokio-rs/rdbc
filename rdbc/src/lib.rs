@@ -93,7 +93,7 @@ pub trait ResultSet {
     fn meta_data(&self) -> Result<Box<dyn ResultSetMetaData>>;
 
     /// get results
-    fn results(&self) -> Result<impl Stream<Item=Row>>;
+    fn results(&self) -> Result<Box<dyn Stream<Item = dyn Row>>>;
 }
 
 /// Meta data for result set

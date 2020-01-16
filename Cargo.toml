@@ -2,9 +2,9 @@
 
 members = [
     "rdbc",
-    "rdbc-mysql",
-    "rdbc-postgres",
-    "rdbc-sqlite",
+#    "rdbc-mysql",
+#    "rdbc-postgres",
+#    "rdbc-sqlite",
 #    "rdbc-odbc",
-    "rdbc-cli",
+#    "rdbc-cli",rdbc-cli
 ]

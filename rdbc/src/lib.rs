@@ -67,24 +67,12 @@ pub trait Connection {
 
 /// Represents an executable statement
 pub trait Statement {
+
     /// Execute a query that is expected to return a result set, such as a `SELECT` statement
     fn execute_query(&mut self, params: &[Value]) -> Result<Box<dyn ResultSet + '_>>;
 
     /// Execute a query that is expected to update some rows.
     fn execute_update(&mut self, params: &[Value]) -> Result<u64>;
-}
-
-/// Represents a single row from a query result set
-pub trait Row {
-    fn get_i8(&self, i: u64) -> Result<Option<i8>>;
-    fn get_i16(&self, i: u64) -> Result<Option<i16>>;
-    fn get_i32(&self, i: u64) -> Result<Option<i32>>;
-    fn get_i64(&self, i: u64) -> Result<Option<i64>>;
-    fn get_f32(&self, i: u64) -> Result<Option<f32>>;
-    fn get_f64(&self, i: u64) -> Result<Option<f64>>;
-    fn get_string(&self, i: u64) -> Result<Option<String>>;
-    fn get_bytes(&self, i: u64) -> Result<Option<Vec<u8>>>;
-    //TODO add other types e.g. date/time
 }
 
 /// Result set from executing a query against a statement
@@ -101,6 +89,19 @@ pub trait ResultSetMetaData {
     fn num_columns(&self) -> u64;
     fn column_name(&self, i: u64) -> String;
     fn column_type(&self, i: u64) -> DataType;
+}
+
+/// Represents a single row from a query result set
+pub trait Row {
+    fn get_i8(&self, i: u64) -> Result<Option<i8>>;
+    fn get_i16(&self, i: u64) -> Result<Option<i16>>;
+    fn get_i32(&self, i: u64) -> Result<Option<i32>>;
+    fn get_i64(&self, i: u64) -> Result<Option<i64>>;
+    fn get_f32(&self, i: u64) -> Result<Option<f32>>;
+    fn get_f64(&self, i: u64) -> Result<Option<f64>>;
+    fn get_string(&self, i: u64) -> Result<Option<String>>;
+    fn get_bytes(&self, i: u64) -> Result<Option<Vec<u8>>>;
+    //TODO add other types e.g. date/time
 }
 
 /// RDBC Data Types

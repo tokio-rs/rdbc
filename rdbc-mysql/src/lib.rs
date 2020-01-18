@@ -120,7 +120,7 @@ pub struct MySQLResultSet<'a> {
     row: Option<my::Result<my::Row>>,
 }
 
-macro_rules! impl_resultset_fns {
+macro_rules! impl_row_fns {
     ($($fn: ident -> $ty: ty),*) => {
         $(
             fn $fn(&self, i: u64) -> rdbc::Result<Option<$ty>> {
@@ -148,12 +148,20 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
         Ok(Box::new(meta))
     }
 
-    fn next(&mut self) -> bool {
-        self.row = self.result.next();
-        self.row.is_some()
+    fn next(&mut self) -> rdbc::Result<Option<Box<dyn rdbc::Row>>> {
+        todo!()
+//        self.row = self.result.next();
+//        self.row.is_some()
     }
 
-    impl_resultset_fns! {
+}
+
+struct MySQLRow {
+    row: Option<my::Result<my::Row>>,
+}
+
+impl rdbc::Row for MySQLRow {
+    impl_row_fns! {
         get_i8 -> i8,
         get_i16 -> i16,
         get_i32 -> i32,
@@ -163,6 +171,7 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
         get_string -> String,
         get_bytes -> Vec<u8>
     }
+
 }
 
 fn to_rdbc_type(t: &ColumnType) -> rdbc::DataType {
@@ -259,9 +268,14 @@ mod tests {
         let mut conn = driver.connect("mysql://root:secret@127.0.0.1:3307/mysql")?;
         let mut stmt = conn.prepare("SELECT a FROM test")?;
         let mut rs = stmt.execute_query(&vec![])?;
-        assert!(rs.next());
-        assert_eq!(Some(123), rs.get_i32(0)?);
-        assert!(!rs.next());
+
+        let row = rs.next().unwrap();
+        assert!(row.is_some());
+        let row = row.unwrap();
+        assert_eq!(Some(123), row.get_i32(0)?);
+
+        let row = rs.next().unwrap();
+        assert!(row.is_none());
 
         Ok(())
     }

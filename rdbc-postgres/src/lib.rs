@@ -17,7 +17,7 @@
 //! }
 //! ```
 
-use postgres::rows::Rows;
+use postgres::rows::{Rows, Row};
 use postgres::{Connection, TlsMode};
 
 use sqlparser::dialect::PostgreSqlDialect;
@@ -129,30 +129,41 @@ struct PResultSet {
     rows: Rows,
 }
 
-macro_rules! impl_resultset_fns {
-    ($($fn: ident -> $ty: ty),*) => {
-        $(
-            fn $fn(&self, i: u64) -> rdbc::Result<Option<$ty>> {
-                Ok(self.rows.get(self.i - 1).get(i as usize))
-            }
-        )*
-    }
-}
 
 impl rdbc::ResultSet for PResultSet {
     fn meta_data(&self) -> rdbc::Result<Box<dyn rdbc::ResultSetMetaData>> {
         Ok(Box::new(self.meta.clone()))
     }
 
-    fn next(&mut self) -> bool {
+    fn next(&mut self) -> rdbc::Result<Option<Box<dyn rdbc::Row>>> {
         if self.i < self.rows.len() {
             self.i = self.i + 1;
-            true
+            //TODO fix lifetime issue here
+//            let row = &self.rows.get(self.i - 1);
+//            Ok(Some(Box::new(PRow { row: &row })))
+            todo!()
         } else {
-            false
+            Ok(None)
         }
     }
+}
 
+
+macro_rules! impl_resultset_fns {
+    ($($fn: ident -> $ty: ty),*) => {
+        $(
+            fn $fn(&self, i: u64) -> rdbc::Result<Option<$ty>> {
+                Ok(self.row.get(i as usize))
+            }
+        )*
+    }
+}
+
+struct PRow<'a> {
+    row: &'a Row<'a>,
+}
+
+impl<'a> rdbc::Row for PRow<'a> {
     impl_resultset_fns! {
         get_i8 -> i8,
         get_i16 -> i16,
@@ -210,9 +221,12 @@ mod tests {
         let mut stmt = conn.prepare("SELECT a FROM test")?;
         let mut rs = stmt.execute_query(&vec![])?;
 
-        assert!(rs.next());
-        assert_eq!(Some(123), rs.get_i32(0)?);
-        assert!(!rs.next());
+        let row = rs.next()?;
+        assert!(row.is_some());
+        assert_eq!(Some(123), row.unwrap().get_i32(0)?);
+
+        let row = rs.next()?;
+        assert!(row.is_none());
 
         Ok(())
     }

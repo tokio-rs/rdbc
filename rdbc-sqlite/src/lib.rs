@@ -19,7 +19,7 @@
 //! ```
 
 use fallible_streaming_iterator::FallibleStreamingIterator;
-use rusqlite::Rows;
+use rusqlite::{Rows, Row};
 
 /// Convert a Sqlite error into an RDBC error
 fn to_rdbc_err(e: rusqlite::Error) -> rdbc::Error {
@@ -86,20 +86,6 @@ impl<'a> rdbc::Statement for SStatement<'a> {
     }
 }
 
-macro_rules! impl_resultset_fns {
-    ($($fn: ident -> $ty: ty),*) => {
-        $(
-            fn $fn(&self, i: u64) -> rdbc::Result<Option<$ty>> {
-                self.rows
-                    .get()
-                    .unwrap()
-                    .get(i as usize)
-                    .map_err(to_rdbc_err)
-            }
-        )*
-    }
-}
-
 struct SResultSet<'stmt> {
     rows: Rows<'stmt>,
 }
@@ -116,15 +102,39 @@ impl<'stmt> rdbc::ResultSet for SResultSet<'stmt> {
         Ok(Box::new(meta))
     }
 
-    fn next(&mut self) -> bool {
-        self.rows.next().unwrap().is_some()
+    fn next(&mut self) -> rdbc::Result<Option<Box<dyn rdbc::Row>>>  {
+        //TODO implement
+        match self.rows.next() {
+            Ok(Some(row)) => todo!(),
+            Ok(None) => Ok(None),
+            _ => todo!()
+        }
     }
+}
+
+macro_rules! impl_row_fns {
+    ($($fn: ident -> $ty: ty),*) => {
+        $(
+            fn $fn(&self, i: u64) -> rdbc::Result<Option<$ty>> {
+                self.row
+                    .get(i as usize)
+                    .map_err(to_rdbc_err)
+            }
+        )*
+    }
+}
+
+struct SRow<'stmt> {
+    row: Row<'stmt>
+}
+
+impl<'stmt> rdbc::Row for SRow<'stmt>  {
 
     fn get_f32(&self, _i: u64) -> rdbc::Result<Option<f32>> {
         Err(rdbc::Error::General("f32 not supported".to_owned()))
     }
 
-    impl_resultset_fns! {
+    impl_row_fns! {
         get_i8 -> i8,
         get_i16 -> i16,
         get_i32 -> i32,
@@ -193,9 +203,13 @@ mod tests {
         assert_eq!("a".to_owned(), meta.column_name(0));
         assert_eq!(DataType::Integer, meta.column_type(0));
 
-        assert!(rs.next());
-        assert_eq!(Some(123), rs.get_i32(0)?);
-        assert!(!rs.next());
+        let row = rs.next().unwrap();
+        assert!(row.is_some());
+        let row = row.unwrap();
+        assert_eq!(Some(123), row.get_i32(0)?);
+
+        let row = rs.next().unwrap();
+        assert!(row.is_none());
 
         Ok(())
     }

@@ -86,16 +86,16 @@ fn execute(conn: &mut dyn Connection, sql: &str) -> Result<()> {
     }
     println!();
 
-    while rs.next() {
+    while let Ok(Some(row)) = rs.next() {
         for i in 0..meta.num_columns() {
             if i > 0 {
                 print!("\t");
             }
             match meta.column_type(i) {
-                DataType::Utf8 => print!("{:?}", rs.get_string(i)),
-                DataType::Integer => print!("{:?}", rs.get_i32(i)),
+                DataType::Utf8 => print!("{:?}", row.get_string(i)),
+                DataType::Integer => print!("{:?}", row.get_i32(i)),
                 // TODO other types
-                _ => print!("{:?}", rs.get_string(i)),
+                _ => print!("{:?}", row.get_string(i)),
             }
         }
         println!();

@@ -72,14 +72,7 @@ pub trait Statement {
     fn execute_update(&mut self, params: &[Value]) -> Result<u64>;
 }
 
-/// Result set from executing a query against a statement
-pub trait ResultSet {
-    /// get meta data about this result set
-    fn meta_data(&self) -> Result<Box<dyn ResultSetMetaData>>;
-
-    /// Move the cursor to the next available row if one exists and return true if it does
-    fn next(&mut self) -> bool;
-
+pub trait Row {
     fn get_i8(&self, i: u64) -> Result<Option<i8>>;
     fn get_i16(&self, i: u64) -> Result<Option<i16>>;
     fn get_i32(&self, i: u64) -> Result<Option<i32>>;
@@ -88,6 +81,16 @@ pub trait ResultSet {
     fn get_f64(&self, i: u64) -> Result<Option<f64>>;
     fn get_string(&self, i: u64) -> Result<Option<String>>;
     fn get_bytes(&self, i: u64) -> Result<Option<Vec<u8>>>;
+    //TODO: add other types such as date, time, timestamp
+}
+
+/// Result set from executing a query against a statement
+pub trait ResultSet: Row {
+    /// get meta data about this result set
+    fn meta_data(&self) -> Result<Box<dyn ResultSetMetaData>>;
+
+    /// Move the cursor to the next available row if one exists and return true if it does
+    fn next(&mut self) -> bool;
 }
 
 /// Meta data for result set

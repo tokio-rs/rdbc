@@ -19,7 +19,7 @@
 //! ```
 
 use fallible_streaming_iterator::FallibleStreamingIterator;
-use rusqlite::{Rows, Row};
+use rusqlite::{Row, Rows};
 
 /// Convert a Sqlite error into an RDBC error
 fn to_rdbc_err(e: rusqlite::Error) -> rdbc::Error {
@@ -102,12 +102,12 @@ impl<'stmt> rdbc::ResultSet for SResultSet<'stmt> {
         Ok(Box::new(meta))
     }
 
-    fn next(&mut self) -> rdbc::Result<Option<Box<dyn rdbc::Row>>>  {
+    fn next(&mut self) -> rdbc::Result<Option<Box<dyn rdbc::Row>>> {
         //TODO implement
         match self.rows.next() {
             Ok(Some(row)) => todo!(),
             Ok(None) => Ok(None),
-            _ => todo!()
+            _ => todo!(),
         }
     }
 }
@@ -125,11 +125,10 @@ macro_rules! impl_row_fns {
 }
 
 struct SRow<'stmt> {
-    row: Row<'stmt>
+    row: Row<'stmt>,
 }
 
-impl<'stmt> rdbc::Row for SRow<'stmt>  {
-
+impl<'stmt> rdbc::Row for SRow<'stmt> {
     fn get_f32(&self, _i: u64) -> rdbc::Result<Option<f32>> {
         Err(rdbc::Error::General("f32 not supported".to_owned()))
     }

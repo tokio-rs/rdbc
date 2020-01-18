@@ -17,7 +17,7 @@
 //! }
 //! ```
 
-use postgres::rows::{Rows, Row};
+use postgres::rows::{Row, Rows};
 use postgres::{Connection, TlsMode};
 
 use sqlparser::dialect::PostgreSqlDialect;
@@ -129,7 +129,6 @@ struct PResultSet {
     rows: Rows,
 }
 
-
 impl rdbc::ResultSet for PResultSet {
     fn meta_data(&self) -> rdbc::Result<Box<dyn rdbc::ResultSetMetaData>> {
         Ok(Box::new(self.meta.clone()))
@@ -139,15 +138,14 @@ impl rdbc::ResultSet for PResultSet {
         if self.i < self.rows.len() {
             self.i = self.i + 1;
             //TODO fix lifetime issue here
-//            let row = &self.rows.get(self.i - 1);
-//            Ok(Some(Box::new(PRow { row: &row })))
+            //            let row = &self.rows.get(self.i - 1);
+            //            Ok(Some(Box::new(PRow { row: &row })))
             todo!()
         } else {
             Ok(None)
         }
     }
 }
-
 
 macro_rules! impl_resultset_fns {
     ($($fn: ident -> $ty: ty),*) => {

@@ -150,10 +150,9 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
 
     fn next(&mut self) -> rdbc::Result<Option<Box<dyn rdbc::Row>>> {
         todo!()
-//        self.row = self.result.next();
-//        self.row.is_some()
+        //        self.row = self.result.next();
+        //        self.row.is_some()
     }
-
 }
 
 struct MySQLRow {
@@ -171,7 +170,6 @@ impl rdbc::Row for MySQLRow {
         get_string -> String,
         get_bytes -> Vec<u8>
     }
-
 }
 
 fn to_rdbc_type(t: &ColumnType) -> rdbc::DataType {

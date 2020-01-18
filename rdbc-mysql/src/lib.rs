@@ -78,7 +78,7 @@ impl<'a> rdbc::Statement for MySQLStatement<'a> {
     ) -> rdbc::Result<Box<dyn rdbc::ResultSet + '_>> {
         let sql = rewrite(&self.sql, params)?;
         let result = self.conn.query(&sql).map_err(to_rdbc_err)?;
-        Ok(Box::new(MySQLResultSet { result, row: None }))
+        Ok(Box::new(MySQLResultSet { result }))
     }
 
     fn execute_update(&mut self, params: &[rdbc::Value]) -> rdbc::Result<u64> {
@@ -104,7 +104,7 @@ impl<'a> rdbc::Statement for MySQLPreparedStatement<'a> {
             .execute(to_my_params(params))
             .map_err(to_rdbc_err)?;
 
-        Ok(Box::new(MySQLResultSet { result, row: None }))
+        Ok(Box::new(MySQLResultSet { result }))
     }
 
     fn execute_update(&mut self, params: &[rdbc::Value]) -> rdbc::Result<u64> {
@@ -117,24 +117,6 @@ impl<'a> rdbc::Statement for MySQLPreparedStatement<'a> {
 
 pub struct MySQLResultSet<'a> {
     result: my::QueryResult<'a>,
-    row: Option<my::Result<my::Row>>,
-}
-
-macro_rules! impl_row_fns {
-    ($($fn: ident -> $ty: ty),*) => {
-        $(
-            fn $fn(&self, i: u64) -> rdbc::Result<Option<$ty>> {
-                match &self.row {
-                    Some(Ok(row)) => row
-                        .get_opt(i as usize)
-                        .expect("we will never `take` the value so the outer `Option` is always `Some`")
-                        .map(|v| Some(v))
-                        .map_err(value_to_rdbc_err),
-                    _ => Ok(None),
-                }
-            }
-        )*
-    }
 }
 
 impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
@@ -149,14 +131,35 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
     }
 
     fn next(&mut self) -> rdbc::Result<Option<Box<dyn rdbc::Row>>> {
-        todo!()
-        //        self.row = self.result.next();
-        //        self.row.is_some()
+        match self.result.next() {
+            Some(Err(e)) => Err(to_rdbc_err(e)),
+            Some(Ok(row)) => Ok(Some(Box::new(MySQLRow::new(row)))),
+            None => Ok(None),
+        }
+    }
+}
+
+macro_rules! impl_row_fns {
+    ($($fn: ident -> $ty: ty),*) => {
+        $(
+            fn $fn(&self, i: u64) -> rdbc::Result<Option<$ty>> {
+                self.row.get_opt(i as usize)
+                    .expect("we will never `take` the value so the outer `Option` is always `Some`")
+                    .map(|v| Some(v))
+                    .map_err(value_to_rdbc_err)
+            }
+        )*
     }
 }
 
 struct MySQLRow {
-    row: Option<my::Result<my::Row>>,
+    row: my::Row,
+}
+
+impl MySQLRow {
+    fn new(row: my::Row) -> Self {
+        Self { row }
+    }
 }
 
 impl rdbc::Row for MySQLRow {

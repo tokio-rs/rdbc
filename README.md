@@ -60,7 +60,9 @@ pub trait ResultSet {
 
     /// Move the cursor to the next available row if one exists and return true if it does
     fn next(&mut self) -> bool;
-
+}
+    
+pub trait Row {
     fn get_i8(&self, i: u64) -> Result<Option<i8>>;
     fn get_i16(&self, i: u64) -> Result<Option<i16>>;
     fn get_i32(&self, i: u64) -> Result<Option<i32>>;

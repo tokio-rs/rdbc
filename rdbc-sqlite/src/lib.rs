@@ -119,9 +119,7 @@ impl<'stmt> rdbc::ResultSet for SResultSet<'stmt> {
     fn next(&mut self) -> bool {
         self.rows.next().unwrap().is_some()
     }
-}
 
-impl<'stmt> rdbc::Row for SResultSet<'stmt> {
     fn get_f32(&self, _i: u64) -> rdbc::Result<Option<f32>> {
         Err(rdbc::Error::General("f32 not supported".to_owned()))
     }

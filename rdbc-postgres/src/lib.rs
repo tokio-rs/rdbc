@@ -152,9 +152,7 @@ impl rdbc::ResultSet for PResultSet {
             false
         }
     }
-}
 
-impl rdbc::Row for PResultSet {
     impl_resultset_fns! {
         get_i8 -> i8,
         get_i16 -> i16,

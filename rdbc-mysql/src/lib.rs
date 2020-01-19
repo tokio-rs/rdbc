@@ -152,9 +152,7 @@ impl<'a> rdbc::ResultSet for MySQLResultSet<'a> {
         self.row = self.result.next();
         self.row.is_some()
     }
-}
 
-impl<'a> rdbc::Row for MySQLResultSet<'a> {
     impl_resultset_fns! {
         get_i8 -> i8,
         get_i16 -> i16,

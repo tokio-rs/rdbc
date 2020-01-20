@@ -119,6 +119,41 @@ pub enum DataType {
     Binary,
 }
 
+impl Row for Vec<Value> {
+
+    fn get_i8(&self, i: u64) -> Result<Option<i8>> {
+        unimplemented!()
+    }
+
+    fn get_i16(&self, i: u64) -> Result<Option<i16>> {
+        unimplemented!()
+    }
+
+    fn get_i32(&self, i: u64) -> Result<Option<i32>> {
+        unimplemented!()
+    }
+
+    fn get_i64(&self, i: u64) -> Result<Option<i64>> {
+        unimplemented!()
+    }
+
+    fn get_f32(&self, i: u64) -> Result<Option<f32>> {
+        unimplemented!()
+    }
+
+    fn get_f64(&self, i: u64) -> Result<Option<f64>> {
+        unimplemented!()
+    }
+
+    fn get_string(&self, i: u64) -> Result<Option<String>> {
+        unimplemented!()
+    }
+
+    fn get_bytes(&self, i: u64) -> Result<Option<Vec<u8>>> {
+        unimplemented!()
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Column {
     name: String,

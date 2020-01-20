@@ -137,10 +137,10 @@ impl rdbc::ResultSet for PResultSet {
     fn next(&mut self) -> rdbc::Result<Option<Box<dyn rdbc::Row>>> {
         if self.i < self.rows.len() {
             self.i = self.i + 1;
-            //TODO fix lifetime issue here
-            //            let row = &self.rows.get(self.i - 1);
-            //            Ok(Some(Box::new(PRow { row: &row })))
-            todo!()
+            let p_row = &self.rows.get(self.i - 1);
+            let row: Vec<rdbc::Value> = vec![];
+            //TODO copy data from postgres row into vec
+            Ok(Some(Box::new(row)))
         } else {
             Ok(None)
         }

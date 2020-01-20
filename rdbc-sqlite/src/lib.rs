@@ -104,10 +104,14 @@ impl<'stmt> rdbc::ResultSet for SResultSet<'stmt> {
 
     fn next(&mut self) -> rdbc::Result<Option<Box<dyn rdbc::Row>>> {
         //TODO implement
-        match self.rows.next() {
-            Ok(Some(row)) => todo!(),
-            Ok(None) => Ok(None),
-            _ => todo!(),
+        match self.rows.next()
+            .map_err(|e| to_rdbc_err(e))? {
+            Some(row) => {
+                let row: Vec<rdbc::Value> = vec![];
+                //TODO copy data from sqlite row into vec
+                Ok(Some(Box::new(row)))
+            },
+            None => Ok(None)
         }
     }
 }

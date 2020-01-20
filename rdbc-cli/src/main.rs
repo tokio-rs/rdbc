@@ -86,7 +86,7 @@ fn execute(conn: &mut dyn Connection, sql: &str) -> Result<()> {
     }
     println!();
 
-    while let Ok(Some(row)) = rs.next() {
+    while let Some(row) = rs.next()? {
         for i in 0..meta.num_columns() {
             if i > 0 {
                 print!("\t");

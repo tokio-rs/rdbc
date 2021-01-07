@@ -222,7 +222,7 @@ fn rewrite(sql: &str, params: &[rdbc::Value]) -> rdbc::Result<String> {
                         Token::Word(Word {
                             value: param.to_string(),
                             quote_style: None,
-                            keyword: "".to_owned(),
+                            keyword: sqlparser::dialect::keywords::Keyword::NoKeyword,
                         })
                     }
                     _ => t.clone(),

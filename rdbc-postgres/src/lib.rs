@@ -70,7 +70,7 @@ impl rdbc::Connection for PConnection {
                     Token::Word(Word {
                         value: format!("${}", i),
                         quote_style: None,
-                        keyword: "".to_owned(),
+                        keyword: sqlparser::dialect::keywords::Keyword::NoKeyword,
                     })
                 }
                 _ => t.clone(),
@@ -163,6 +163,27 @@ impl rdbc::ResultSet for PResultSet {
         get_string -> String,
         get_bytes -> Vec<u8>
     }
+
+    fn get<T>(&self, i: u64) -> rdbc::Result<Option<T>> where T: rdbc::ResultSetGet {
+        T::get(self, i)
+    }
+}
+
+macro_rules! impl_resultget {
+    ($($ty: ty),*) => {
+        $(
+            impl rdbc::ResultSetGet for $ty {
+                type Set = PResultSet;
+                fn get(set: &Self::Set, i: u64) -> rdbc::Result<Option<Self>> {
+                    Ok(set.rows.get(set.i - 1).get(i as usize))
+                }
+            }
+        )*
+    };
+}
+
+impl_resultget! {
+    i8, i16, i32, i64, f32, f64, String, Vec<u8>
 }
 
 /// Convert a Postgres error into an RDBC error
@@ -213,6 +234,8 @@ mod tests {
         assert!(rs.next());
         assert_eq!(Some(123), rs.get_i32(0)?);
         assert!(!rs.next());
+
+        let x = rs.get::<i32>(0)??;
 
         Ok(())
     }

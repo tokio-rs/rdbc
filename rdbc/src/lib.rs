@@ -88,6 +88,13 @@ pub trait ResultSet {
     fn get_f64(&self, i: u64) -> Result<Option<f64>>;
     fn get_string(&self, i: u64) -> Result<Option<String>>;
     fn get_bytes(&self, i: u64) -> Result<Option<Vec<u8>>>;
+
+    fn get<T>(&self, i: u64) -> Result<Option<T>> where T: ResultSetGet;
+}
+
+pub trait ResultSetGet {
+    type Set: ResultSet;
+    fn get(set: &Self::Set, i: u64) -> Result<Option<Self>>;
 }
 
 /// Meta data for result set

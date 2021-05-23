@@ -21,6 +21,7 @@ use postgres::rows::Rows;
 use postgres::{Connection, TlsMode};
 
 use sqlparser::dialect::PostgreSqlDialect;
+use sqlparser::dialect::keywords::Keyword;
 use sqlparser::tokenizer::{Token, Tokenizer, Word};
 
 use postgres::types::Type;
@@ -70,7 +71,7 @@ impl rdbc::Connection for PConnection {
                     Token::Word(Word {
                         value: format!("${}", i),
                         quote_style: None,
-                        keyword: "".to_owned(),
+                        keyword: Keyword::NoKeyword,
                     })
                 }
                 _ => t.clone(),

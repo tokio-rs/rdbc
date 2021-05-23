@@ -11,4 +11,4 @@ edition = "2018"
 rdbc = { path = "../rdbc", version = "0.1.6" }
 
 postgres = "0.15.2"
-sqlparser = "0.5.0"
+sqlparser = "0.9.0"

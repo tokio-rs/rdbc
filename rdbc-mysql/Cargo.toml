@@ -13,4 +13,4 @@ rdbc = { path = "../rdbc", version = "0.1.6" }
 mysql = "17.0.0"
 mysql_common = "0.19.2"
 twox-hash = "1.5.0"
-sqlparser = "0.5.0"
+sqlparser = "0.9.0"

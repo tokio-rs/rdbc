@@ -21,6 +21,7 @@ use mysql as my;
 use mysql_common::constants::ColumnType;
 
 use sqlparser::dialect::MySqlDialect;
+use sqlparser::dialect::keywords::Keyword;
 use sqlparser::tokenizer::{Token, Tokenizer, Word};
 
 /// Convert a MySQL error into an RDBC error
@@ -222,7 +223,7 @@ fn rewrite(sql: &str, params: &[rdbc::Value]) -> rdbc::Result<String> {
                         Token::Word(Word {
                             value: param.to_string(),
                             quote_style: None,
-                            keyword: "".to_owned(),
+                            keyword: Keyword::NoKeyword,
                         })
                     }
                     _ => t.clone(),
